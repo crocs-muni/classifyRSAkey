@@ -170,16 +170,8 @@ public class RawTable {
         }
 
         //Use new sort
-        Set<Set<String>> groups = new TreeSet<>(new Comparator<Set<String>>(){
-            public int compare(Set<String> a, Set<String> b) {
-                int ret = a.size() - b.size();
-                if (ret != 0) return ret;
-                return a.toString().compareTo(b.toString());
-            }
-        });
-        for (Set<String> set : newGroups) {
-            groups.add(set);
-        }
+        Set<Set<String>> groups = new TreeSet<>(new GroupsComparator(getRepresentants()));
+        groups.addAll(newGroups);
 
         return groups;
     }
@@ -322,12 +314,12 @@ public class RawTable {
         }
 
         try (ExtendedWriter writer = new ExtendedWriter(outFile)) {
-            writer.writeln(";" + String.join(";", table.keySet()));
+            writer.writeln("," + String.join(",", table.keySet()));
             for (String identification : identifications) {
                 writer.write(identification);
                 for (String source : table.keySet()) {
                     Long value = table.get(source).get(identification);
-                    writer.write(";" + (value == null ? "0" : value.toString()));
+                    writer.write("," + (value == null ? "0" : value.toString()));
                 }
                 writer.newLine();
             }

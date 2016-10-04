@@ -18,8 +18,8 @@ public class BatchesHistogram {
         try (BufferedReader reader = new BufferedReader(new FileReader(infile))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                if (line.startsWith("Unique keys;")) {
-                    String id = line.split(";", 2)[1];
+                if (line.startsWith("Unique keys,")) {
+                    String id = line.split(",", 2)[1];
                     map.putIfAbsent(id, 0L);
                     map.put(id, map.get(id) + Long.valueOf(id));
                 }
@@ -31,7 +31,7 @@ public class BatchesHistogram {
 
         try (ExtendedWriter writer = new ExtendedWriter(outfile)) {
             for (Map.Entry<String, Long> entry : map.entrySet()) {
-                writer.writeln(entry.getKey() + ";" + entry.getValue());
+                writer.writeln(entry.getKey() + "," + entry.getValue());
             }
         }
         catch (IOException ex) {

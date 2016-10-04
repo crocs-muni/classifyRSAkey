@@ -45,13 +45,13 @@ public class Misclassification {
     public void compute(String outfile) throws IOException {
         try (ExtendedWriter writer = new ExtendedWriter(outfile)) {
             for (int keyForTest : keysForTest) {
-                writer.writeln("Misclassification;" + keyForTest + " keys");
+                writer.writeln("Misclassification," + keyForTest + " keys");
                 writeClassificationResultToCsv(computeAllForNKeys(keyForTest, testsKeysTable.copyTable()), writer);
                 writer.newLine();
             }
 
             for (int keyForTest : keysForTest) {
-                writer.writeln("Misclassification;" + keyForTest + " keys;Top 1");
+                writer.writeln("Misclassification," + keyForTest + " keys,Top 1");
                 writeResultToCsv(computeTopForNKeys(keyForTest, testsKeysTable.copyTable()), writer);
                 writer.newLine();
             }
@@ -152,19 +152,19 @@ public class Misclassification {
 
     private void writeResultToCsv(Map<String, Map<String, Double>> result, ExtendedWriter writer) throws IOException {
         DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols();
-        otherSymbols.setDecimalSeparator(',');
+        otherSymbols.setDecimalSeparator('.');
         DecimalFormat formatter = new DecimalFormat("#0.0000", otherSymbols);
-        writer.writeln(";" + String.join(";", result.keySet()));
+        writer.writeln("," + String.join(",", result.keySet()));
         for (String group : result.keySet()) {
             writer.write(group);
             for (String groupTo : result.keySet()) {
                 Double decimal = result.get(group).get(groupTo);
                 if (decimal == null) {
-                    writer.write(";-");
+                    writer.write(",-");
                 }
                 else {
                     double value = decimal;
-                    writer.write(";" + formatter.format(value));
+                    writer.write("," + formatter.format(value));
                 }
             }
             writer.newLine();

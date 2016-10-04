@@ -1,0 +1,18 @@
+Keys All,{$keys}
+Keys Unique,{$uniqueKeys}
+
+Positive
+{$positiveGroups}
+{$positiveValues}
+
+Positive,Unique
+{$positiveUniqueGroups}
+{$positiveUniqueValues}
+
+Negative
+{$negativeGroups}
+{$negativeValues}
+
+Negative,Unique
+{$negativeUniqueGroups}
+{$negativeUniqueValues}

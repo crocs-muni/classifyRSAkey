@@ -15,7 +15,7 @@ public class EuclideanDistanceOfSources {
     public static void run(String infile, String outfile) throws Exception {
         RawTable table = RawTable.load(infile);
         DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols();
-        otherSymbols.setDecimalSeparator(',');
+        otherSymbols.setDecimalSeparator('.');
         DecimalFormat df = new DecimalFormat("0.000", otherSymbols);
 
         Template template = new Template("edos.html");

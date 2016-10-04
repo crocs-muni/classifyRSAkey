@@ -87,17 +87,17 @@ public class ClassificationSuccess {
         }
 
         DecimalFormatSymbols otherSymbols = new DecimalFormatSymbols();
-        otherSymbols.setDecimalSeparator(',');
+        otherSymbols.setDecimalSeparator('.');
         DecimalFormat formatter = new DecimalFormat("#00.0000", otherSymbols);
         try (ExtendedWriter writer = new ExtendedWriter(outfile)) {
             char[] charsTop = new char[keysForTest.length - 1];
-            Arrays.fill(charsTop, ';');
+            Arrays.fill(charsTop, ',');
             String separatorsTop = new String(charsTop);
             String topLine = "", bottomLine = "";
             for (int i = 0; i < 3; i++) {
-                topLine += ";Top " + (i + 1) + " match" + separatorsTop;
+                topLine += ",Top " + (i + 1) + " match" + separatorsTop;
                 for (int key : keysForTest) {
-                    bottomLine += ";" + key;
+                    bottomLine += "," + key;
                 }
             }
             writer.writeln(topLine);
@@ -107,17 +107,17 @@ public class ClassificationSuccess {
                 for (int k : keysForTest) {
                     ArrayList<Integer> positions = entrySources.getValue().get(k);
                     long good = positions.stream().filter(p -> p <= 1).count();
-                    writer.write(";" + formatter.format(((double)good)/positions.size()));
+                    writer.write("," + formatter.format(((double)good)/positions.size()));
                 }
                 for (int k : keysForTest) {
                     ArrayList<Integer> positions = entrySources.getValue().get(k);
                     long good = positions.stream().filter(p -> p <= 2).count();
-                    writer.write(";" + formatter.format(((double)good)/positions.size()));
+                    writer.write("," + formatter.format(((double)good)/positions.size()));
                 }
                 for (int k : keysForTest) {
                     ArrayList<Integer> positions = entrySources.getValue().get(k);
                     long good = positions.stream().filter(p -> p <= 3).count();
-                    writer.write(";" + formatter.format(((double)good)/positions.size()));
+                    writer.write("," + formatter.format(((double)good)/positions.size()));
                 }
                 writer.newLine();
             }
@@ -125,7 +125,7 @@ public class ClassificationSuccess {
 
 //            int n = classificationTable.getGroupsNames().size();
 //            char[] chars = new char[n];
-//            Arrays.fill(chars, ';');
+//            Arrays.fill(chars, ',');
 //            String separators = new String(chars);
 //
 //            writer.newLine();
@@ -134,7 +134,7 @@ public class ClassificationSuccess {
 //            }
 //            writer.newLine();
 //            for (int key : keysForTest) {
-//                writer.write(";" + String.join(";", classificationTable.getGroupsNames()));
+//                writer.write("," + String.join(",", classificationTable.getGroupsNames()));
 //            }
 //            writer.newLine();
 //            for (Map.Entry<String, Map<Integer, ClassificationRow>> entrySources : sourcesRows.entrySet()) {
@@ -143,8 +143,8 @@ public class ClassificationSuccess {
 //                    ClassificationRow row = entrySources.getValue().get(k);
 //                    for (String group : classificationTable.getGroupsNames()) {
 //                        BigDecimal val = row.getSource(group);
-//                        if (val == null) writer.write(";-");
-//                        else writer.write(";" + formatter.format(val.doubleValue()));
+//                        if (val == null) writer.write(",-");
+//                        else writer.write("," + formatter.format(val.doubleValue()));
 //                    }
 //                }
 //                writer.newLine();

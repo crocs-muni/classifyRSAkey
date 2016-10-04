@@ -59,32 +59,61 @@ public abstract class Transformation {
         if (!identificationPart.containsKey("transformationId")) {
             throw new WrongTransformationFormatException("Transformation does not contain parameter 'transformationId'");
         }
-        if (!identificationPart.containsKey("transform")) {
-            throw new WrongTransformationFormatException("Transformation does not contain parameter 'transform'");
-        }
         if (!identificationPart.containsKey("options")) {
             throw new WrongTransformationFormatException("Transformation does not contain parameter 'options'");
         }
 
         String transformationId = (String)identificationPart.get("transformationId");
-        String transform = ((String)identificationPart.get("transform")).toLowerCase();
-
         if (!transformationId.matches("[a-zA-Z0-9]+")) {
             throw new WrongTransformationFormatException("Transformation parameter 'transformationId' is empty or contains not allowed characters");
         }
 
-        RSAKey.PART from;
-        switch (transform) {
-            case "n": from = RSAKey.PART.N; break;
-            case "e": from = RSAKey.PART.E; break;
-            case "d": from = RSAKey.PART.D; break;
-            case "p": from = RSAKey.PART.P; break;
-            case "q": from = RSAKey.PART.Q; break;
-            case "phi": from = RSAKey.PART.PHI; break;
-            case "nblen": from = RSAKey.PART.NBLEN; break;
-            case "pblen": from = RSAKey.PART.PBLEN; break;
-            case "qblen": from = RSAKey.PART.QBLEN; break;
-            default: throw new WrongTransformationFormatException("Transformation parameter 'transform' is not one of {N,E,D,P,Q,PHI,NBLEN,PBLEN,QBLEN}");
+        RSAKey.PART from = null;
+        if (identificationPart.containsKey("transform")) {
+            String transform = ((String) identificationPart.get("transform")).toLowerCase();
+            switch (transform) {
+                case "n":
+                    from = RSAKey.PART.N;
+                    break;
+                case "e":
+                    from = RSAKey.PART.E;
+                    break;
+                case "d":
+                    from = RSAKey.PART.D;
+                    break;
+                case "p":
+                    from = RSAKey.PART.P;
+                    break;
+                case "pmo":
+                    from = RSAKey.PART.PMO;
+                    break;
+                case "ppo":
+                    from = RSAKey.PART.PPO;
+                    break;
+                case "q":
+                    from = RSAKey.PART.Q;
+                    break;
+                case "qmo":
+                    from = RSAKey.PART.QMO;
+                    break;
+                case "qpo":
+                    from = RSAKey.PART.QPO;
+                    break;
+                case "phi":
+                    from = RSAKey.PART.PHI;
+                    break;
+                case "nblen":
+                    from = RSAKey.PART.NBLEN;
+                    break;
+                case "pblen":
+                    from = RSAKey.PART.PBLEN;
+                    break;
+                case "qblen":
+                    from = RSAKey.PART.QBLEN;
+                    break;
+                default:
+                    throw new WrongTransformationFormatException("Transformation parameter 'transform' is not one of {N,E,D,P,PMO,PPO,Q,QMO,QPO,PHI,NBLEN,PBLEN,QBLEN}");
+            }
         }
 
         try {

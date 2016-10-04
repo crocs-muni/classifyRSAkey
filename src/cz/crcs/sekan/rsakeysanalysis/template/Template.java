@@ -3,6 +3,8 @@ package cz.crcs.sekan.rsakeysanalysis.template;
 import cz.crcs.sekan.rsakeysanalysis.Main;
 
 import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Peter Sekan, peter.sekan@mail.muni.cz
@@ -13,6 +15,11 @@ public class Template {
      * Content of template
      */
     private String content;
+
+    /**
+     * Variables
+     */
+    private Map<String, String> variables = new HashMap<>();
 
     /**
      * Create template object from file with specified name in folder templates
@@ -36,9 +43,15 @@ public class Template {
      * @param value content of variable
      */
     public void setVariable(String name, String value) {
-        content = content.replace("{$" + name + "}", value);
+        variables.put(name, value);
     }
 
+    /**
+     * Clear all variables values
+     */
+    public void resetVariables() {
+        variables.clear();
+    }
     /**
      * Save generated template to file
      * @param outfile path to file
@@ -46,7 +59,19 @@ public class Template {
      */
     public void generateFile(String outfile) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(outfile))) {
-            writer.write(content);
+            writer.write(generateString());
         }
+    }
+
+    /**
+     * Generate template to string
+     * @return content of template with set variables
+     */
+    public String generateString() {
+        String generated = content;
+        for (Map.Entry<String, String> variable : variables.entrySet()) {
+            generated = generated.replace("{$" + variable.getKey() + "}", variable.getValue());
+        }
+        return generated;
     }
 }

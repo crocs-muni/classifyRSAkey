@@ -18,7 +18,7 @@ public class RSAKey {
      * Parts of rsa key
      */
     public enum PART {
-        N, E, D, P, Q, PHI, NBLEN, PBLEN, QBLEN
+        N, E, D, P, PMO, PPO, Q, QMO, QPO, PHI, NBLEN, PBLEN, QBLEN
     }
 
     private static final int RADIX = 10;
@@ -49,6 +49,16 @@ public class RSAKey {
         this.exponent = exponent;
     }
 
+    public RSAKey createReversedPaQ() {
+        RSAKey key = new RSAKey(this.modulus, this.exponent);
+        key.setP(this.getQ());
+        key.setQ(this.getP());
+        key.setTime(this.getTime());
+        key.validKey = this.validKey;
+        key.checkedValidity = this.checkedValidity;
+        return key;
+    }
+
     public BigInteger getExponent() {
         return exponent;
     }
@@ -58,6 +68,11 @@ public class RSAKey {
     }
 
     public BigInteger getModulus() {
+        if (modulus == null) {
+            if (p != null && q != null) {
+                return p.multiply(q);
+            }
+        }
         return modulus;
     }
 
@@ -152,18 +167,33 @@ public class RSAKey {
                 return getPrivateExponent();
             case P:
                 return getP();
+            case PMO:
+                if (getP() == null) return null;
+                return getP().subtract(BigInteger.ONE);
+            case PPO:
+                if (getP() == null) return null;
+                return getP().add(BigInteger.ONE);
             case Q:
                 return getQ();
+            case QMO:
+                if (getQ() == null) return null;
+                return getQ().subtract(BigInteger.ONE);
+            case QPO:
+                if (getQ() == null) return null;
+                return getQ().add(BigInteger.ONE);
             case PHI:
                 return getPhi();
             case NBLEN:
+                if (getModulus() == null) return null;
                 return BigInteger.valueOf(getModulus().bitLength());
             case PBLEN:
+                if (getP() == null) return null;
                 return BigInteger.valueOf(getP().bitLength());
             case QBLEN:
+                if (getQ() == null) return null;
                 return BigInteger.valueOf(getQ().bitLength());
             default:
-                return null;
+                throw new IllegalArgumentException("Unknown part of RSAKey: '" + part + "'");
         }
     }
 
