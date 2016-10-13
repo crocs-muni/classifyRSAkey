@@ -2,10 +2,9 @@ package cz.crcs.sekan.rsakeysanalysis.classification.table;
 
 import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKey;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.identification.IdentificationGenerator;
-import cz.crcs.sekan.rsakeysanalysis.common.*;
 import cz.crcs.sekan.rsakeysanalysis.common.ExtendedWriter;
 
-import java.io.*;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.util.*;
@@ -53,7 +52,6 @@ public class ClassificationTable {
                 }
             }
             ClassificationRow classificationRow = new ClassificationRow(row);
-            classificationRow.normalize();
             table.put(identification, classificationRow);
         }
     }
