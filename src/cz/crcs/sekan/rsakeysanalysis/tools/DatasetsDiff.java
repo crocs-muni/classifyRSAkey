@@ -2,20 +2,19 @@ package cz.crcs.sekan.rsakeysanalysis.tools;
 
 import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKey;
 import cz.crcs.sekan.rsakeysanalysis.common.ExtendedWriter;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Peter Sekan, peter.sekan@mail.muni.cz
  * @version 02/10/2016
  */
-public class DataSetsDiff {
+public class DatasetsDiff {
     public static void run(String dataSetA, String dataSetB, String outFolder) {
         List<ClassificationKey> keys = new ArrayList<>();
         System.out.println("Reading keys from first dataset.");

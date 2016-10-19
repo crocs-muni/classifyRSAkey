@@ -4,6 +4,7 @@ import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKey;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationContainer;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationRow;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationTable;
+import cz.crcs.sekan.rsakeysanalysis.classification.table.PrimeMatchingContainer;
 import cz.crcs.sekan.rsakeysanalysis.classification.tests.ModulusFactors;
 import cz.crcs.sekan.rsakeysanalysis.common.ExtendedWriter;
 import cz.crcs.sekan.rsakeysanalysis.template.Template;
@@ -79,9 +80,13 @@ public class DataSetClassification {
         this.classificationTableForNotClassify = classificationTableForNotClassify;
     }
 
-    public void classify() {
+    public void classify(boolean batchBySharedPrimes) {
         Map<Set<String>, ClassificationContainer> parsedData = new HashMap<>();
         List<ClassificationContainer> keysWithoutSource = new ArrayList<>();
+        // Private keys obtained by factorization should share some primes.
+        // By mapping the primes to the keys, we can eventually create a group of keys probably coming from the same
+        // flawed implementation without relying on meta-data for grouping.
+        Map<BigInteger, Set<PrimeMatchingContainer>> primeToKeyMap = new HashMap<>();
 
         //Read and parse all keys
         try (BufferedReader reader = new BufferedReader(new FileReader(pathToDataSet))) {
@@ -120,8 +125,28 @@ public class DataSetClassification {
                         continue;
                     }
 
+                    // Allow batching by primes if shared primes are available
+                    if (batchBySharedPrimes && key.getRsaKey().getP() != null && key.getRsaKey().getQ() != null) {
+                        BigInteger[] array = {key.getRsaKey().getP(), key.getRsaKey().getQ()};
+                        for (BigInteger prime : array) {
+                            Set<PrimeMatchingContainer> keySet = primeToKeyMap.get(prime);
+
+                            PrimeMatchingContainer container = new PrimeMatchingContainer(
+                                            key.getCount(),
+                                            row,
+                                            key.getRsaKey().getP(),
+                                            key.getRsaKey().getQ());
+                            if (keySet == null) {
+                                HashSet<PrimeMatchingContainer> newSet = new HashSet<>();
+                                newSet.add(container);
+                                primeToKeyMap.put(prime, newSet);
+                            } else {
+                                keySet.add(container);
+                            }
+                        }
+                    }
                     //Create new batch by source identification if does not exist
-                    if (key.getSource() == null || key.getSource().size() == 0) {
+                    else if (key.getSource() == null || key.getSource().size() == 0) {
                         keysWithoutSource.add(new ClassificationContainer(key.getCount(), row));
                     }
                     else {
@@ -140,6 +165,51 @@ public class DataSetClassification {
             }
         } catch (IOException ex) {
             System.err.println("Error while reading file '" + pathToDataSet + "'.");
+        }
+
+        if (primeToKeyMap != null && !primeToKeyMap.isEmpty()) {
+            // Keys were batched by primes. Merge and remove sets and do the actual classification
+            // Each prime is a key in the map to a set of ClassificationContainers
+            Map<Set<BigInteger>, Set<PrimeMatchingContainer>> uniqueSets = new HashMap<>();
+            while (!primeToKeyMap.isEmpty()) {
+                BigInteger firstPrime = primeToKeyMap.keySet().iterator().next();
+                Set<PrimeMatchingContainer> allKeys = primeToKeyMap.get(firstPrime);
+                Set<PrimeMatchingContainer> processedKeys = new HashSet<>();
+
+                Set<BigInteger> sharedPrimes = new HashSet<>();
+
+                while (!allKeys.isEmpty()) {
+                    PrimeMatchingContainer singleKey = allKeys.iterator().next();
+                    for (BigInteger prime : new BigInteger[] {singleKey.getP(), singleKey.getQ()}) {
+                        Set<PrimeMatchingContainer> similarKeys = primeToKeyMap.get(prime);
+                        if (similarKeys != null) {
+                            allKeys.addAll(similarKeys);
+                            primeToKeyMap.remove(prime);
+                            sharedPrimes.add(prime);
+                        }
+                    }
+                    allKeys.remove(singleKey);
+                    processedKeys.add(singleKey);
+                }
+                primeToKeyMap.remove(firstPrime);
+                uniqueSets.put(sharedPrimes, processedKeys);
+            }
+
+            for (Set<BigInteger> mapKey : uniqueSets.keySet()) {
+                Set<String> stringKey = new HashSet<>();
+                for (BigInteger i : mapKey) {
+                    stringKey.add(i.toString(16));
+                }
+                ClassificationContainer mainContainer = null;
+                for (ClassificationContainer container : uniqueSets.get(mapKey)) {
+                    if (mainContainer == null) {
+                        mainContainer = container;
+                    } else {
+                        mainContainer.add(container.getNumOfKeys(), container.getRow());
+                    }
+                }
+                parsedData.put(stringKey, mainContainer);
+            }
         }
 
         // Create containers for statistics

@@ -76,9 +76,15 @@ public class Main {
                     ClassificationTable classificationTable = table.computeClassificationTable();
                     classifyDataSet(classificationTable, args[++i], args[++i]);
                     break;
+                case "-cf":
+                case "--classifyFactorable":
+                    RawTable tableFactorable = RawTable.load(args[++i]);
+                    ClassificationTable classificationTableFactorable = tableFactorable.computeClassificationTable();
+                    classifyDataSet(classificationTableFactorable, args[++i], args[++i], true);
+                    break;
                 case "-d":
                 case "--diff":
-                    DataSetsDiff.run(args[++i], args[++i], args[++i]);
+                    DatasetsDiff.run(args[++i], args[++i], args[++i]);
                     break;
                 case "-rd":
                 case "--removeDuplicity":
@@ -149,7 +155,11 @@ public class Main {
                 "  -c   table in  out   Classify keys from key set.\n" +
                 "                        table = path to classification table file\n" +
                 "                        in    = path to key set\n" +
-                "                        out   = path to folder for store results\n" +
+                "                        out   = path to folder for storing results\n" +
+                "  -cf  table in  out   Classify private keys which share some factors (factored by batch GCD) from key set.\n" +
+                "                        table = path to classification table file\n" +
+                "                        in    = path to key set\n" +
+                "                        out   = path to folder for storing results\n" +
                 "  -rd  in    out       Remove duplicity from key set.\n" +
                 "                        in    = path to key set\n" +
                 "                        out   = path to key set\n" +
@@ -220,11 +230,22 @@ public class Main {
      * @param table classification table
      * @param fileName path to key set file
      * @param folder path to folder where will be create files with results
+     * @param batchBySharedPrimes batch the private keys by shared primes (true) or with default batching (false)
      */
-    private static void classifyDataSet(ClassificationTable table, String fileName, String folder) {
+    private static void classifyDataSet(ClassificationTable table, String fileName, String folder, boolean batchBySharedPrimes) {
         DataSetClassification classification = new DataSetClassification(table, fileName, folder);
         if (modulusFactors != null) classification.setModulusFactors(modulusFactors);
         if (classificationTableForNotClassify != null) classification.setClassificationTableForNotClassify(classificationTableForNotClassify);
-        classification.classify();
+        classification.classify(batchBySharedPrimes);
+    }
+
+    /**
+     * Classify key set.
+     * @param table classification table
+     * @param fileName path to key set file
+     * @param folder path to folder where will be create files with results
+     */
+    private static void classifyDataSet(ClassificationTable table, String fileName, String folder) {
+        classifyDataSet(table, fileName, folder, false);
     }
 }
