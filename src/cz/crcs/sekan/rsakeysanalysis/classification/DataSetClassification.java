@@ -134,6 +134,7 @@ public class DataSetClassification {
                             PrimeMatchingContainer container = new PrimeMatchingContainer(
                                             key.getCount(),
                                             row,
+                                            key,
                                             key.getRsaKey().getP(),
                                             key.getRsaKey().getQ());
                             if (keySet == null) {
@@ -147,15 +148,15 @@ public class DataSetClassification {
                     }
                     //Create new batch by source identification if does not exist
                     else if (key.getSource() == null || key.getSource().size() == 0) {
-                        keysWithoutSource.add(new ClassificationContainer(key.getCount(), row));
+                        keysWithoutSource.add(new ClassificationContainer(key.getCount(), row, key));
                     }
                     else {
                         ClassificationContainer container = parsedData.get(key.getSource());
                         if (container == null) {
-                            parsedData.put(key.getSource(), new ClassificationContainer(key.getCount(), row));
+                            parsedData.put(key.getSource(), new ClassificationContainer(key.getCount(), row, key));
                         } else {
                             //If batch exists add classified row to container
-                            container.add(key.getCount(), row);
+                            container.add(key.getCount(), row, key);
                         }
                     }
                 } catch (Exception ex) {
@@ -205,11 +206,92 @@ public class DataSetClassification {
                     if (mainContainer == null) {
                         mainContainer = container;
                     } else {
-                        mainContainer.add(container.getNumOfKeys(), container.getRow());
+                        mainContainer.add(container.getNumOfKeys(), container.getRow(), container.getKeys());
                     }
                 }
                 parsedData.put(stringKey, mainContainer);
             }
+        }
+
+        ExtendedWriter datasetWriter;
+
+        try {
+            datasetWriter = new ExtendedWriter(pathToFolderWithResults + "dataset.json");
+        } catch (IOException ex) {
+            System.err.println("Error while opening file 'dataset.csv' for results.");
+            return;
+        }
+
+        //Reconstruct original dataset with results of each classification container
+        Template fullClassificationContainerResult;
+        try {
+            fullClassificationContainerResult = new Template("fullClassificationContainerResult.csv");
+        }
+        catch (IOException ex) {
+            System.err.println("Error while creating template from file 'fullClassificationContainerResult.csv': " + ex.getMessage());
+            return;
+        }
+
+        long batchId = 0;
+
+        for (Set<String> batchKey : parsedData.keySet()) {
+            ClassificationContainer container = parsedData.get(batchKey);
+            ClassificationRow row = container.getRow();
+            List<ClassificationKey> keys = container.getKeys();
+
+            for (ClassificationKey key : keys) {
+                try {
+                    String values = "";
+                    for (String groupName : table.getGroupsNames()) {
+                        BigDecimal val = row.getSource(groupName);
+                        values += (values.length() > 0 ? "," : "");
+                        if (val != null) { values += val.doubleValue(); } else { values += "0"; }
+                    }
+
+                    Boolean first = true;
+                    String vectors = "[";
+                    for (String identification : table.generationIdentification(key)) {
+                        if (first) { first = false; } else { vectors += ", "; }
+                        vectors += "\"" + identification + "\"";
+                    }
+                    vectors += "]";
+
+                    String source = "\"NULL\"";
+                    if (key.getSource() != null && !key.getSource().isEmpty()) {
+                        first = true;
+                        source = "[";
+                        for (String sourceElement : key.getSource()) {
+                            if (first) { first = false; } else { source += ", "; }
+                            source += "\"" + sourceElement + "\"";
+                        }
+                        source += "]";
+                    }
+
+                    fullClassificationContainerResult.resetVariables();
+                    fullClassificationContainerResult.setVariable("p", key.getRsaKey().getP().toString(16));
+                    fullClassificationContainerResult.setVariable("q", key.getRsaKey().getQ().toString(16));
+                    fullClassificationContainerResult.setVariable("n", key.getRsaKey().getModulus().toString(16));
+                    fullClassificationContainerResult.setVariable("ordered", Boolean.valueOf(key.isOrdered()).toString());
+                    fullClassificationContainerResult.setVariable("occurrence", Long.valueOf(key.getCount()).toString());
+                    fullClassificationContainerResult.setVariable("source", source);
+                    fullClassificationContainerResult.setVariable("info", key.getInfo().toString());
+                    fullClassificationContainerResult.setVariable("batch", Long.valueOf(batchId).toString());
+                    fullClassificationContainerResult.setVariable("vector", vectors);
+                    fullClassificationContainerResult.setVariable("probabilities", values);
+                    datasetWriter.write(fullClassificationContainerResult.generateString());
+                } catch (IOException ex) {
+                    System.err.println("Error while writing result to file.");
+                }
+            }
+
+            batchId++;
+        }
+
+        try {
+            datasetWriter.close();
+        } catch (IOException e) {
+            System.err.println("Error while closing dataset.json");
+            return;
         }
 
         // Create containers for statistics

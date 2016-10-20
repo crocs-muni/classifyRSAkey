@@ -1,5 +1,7 @@
 package cz.crcs.sekan.rsakeysanalysis.classification.table;
 
+import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKey;
+
 import java.math.BigInteger;
 
 /**
@@ -13,8 +15,8 @@ public class PrimeMatchingContainer extends ClassificationContainer {
     private BigInteger p;
     private BigInteger q;
 
-    public PrimeMatchingContainer(long numOfDuplicityKeys, ClassificationRow row, BigInteger p, BigInteger q) {
-        super(numOfDuplicityKeys, row);
+    public PrimeMatchingContainer(long numOfDuplicityKeys, ClassificationRow row, ClassificationKey key, BigInteger p, BigInteger q) {
+        super(numOfDuplicityKeys, row, key);
         this.p = p;
         this.q = q;
     }
@@ -39,9 +41,9 @@ public class PrimeMatchingContainer extends ClassificationContainer {
 
         PrimeMatchingContainer that = (PrimeMatchingContainer) o;
 
-        if (p != null ? !p.equals(that.p) : that.p != null) return false;
-        return q != null ? q.equals(that.q) : that.q == null;
-
+        return p != null ? p.equals(that.p) : that.p == null
+                && (q != null ? q.equals(that.q) : that.q == null)
+                && (getKeys() != null ? getKeys().equals(that.getKeys()) : that.getKeys() == null);
     }
 
     @Override
