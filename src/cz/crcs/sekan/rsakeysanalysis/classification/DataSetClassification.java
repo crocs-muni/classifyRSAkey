@@ -290,7 +290,7 @@ public class DataSetClassification {
                     String vectors = vectorsArray.toJSONString();
 
                     JSONArray sourceArray = new JSONArray();
-                    sourceArray.addAll(key.getSource());
+                    if (key.getSource() != null) sourceArray.addAll(key.getSource());
                     String source = sourceArray.toJSONString();
 
                     fullClassificationContainerResult.resetVariables();
