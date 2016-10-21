@@ -74,12 +74,14 @@ public class Main {
                 case "--classify":
                     RawTable table = RawTable.load(args[++i]);
                     ClassificationTable classificationTable = table.computeClassificationTable();
+                    classificationTable.setRawTable(table);
                     classifyDataSet(classificationTable, args[++i], args[++i]);
                     break;
                 case "-cf":
                 case "--classifyFactorable":
                     RawTable tableFactorable = RawTable.load(args[++i]);
                     ClassificationTable classificationTableFactorable = tableFactorable.computeClassificationTable();
+                    classificationTableFactorable.setRawTable(tableFactorable);
                     classifyDataSet(classificationTableFactorable, args[++i], args[++i], true);
                     break;
                 case "-d":

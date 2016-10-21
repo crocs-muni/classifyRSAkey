@@ -18,6 +18,7 @@ public class ClassificationTable {
     private Map<String, Set<String>> groups = new TreeMap<>();
 
     private IdentificationGenerator identificationGenerator;
+    private RawTable rawTable = null;
 
     public ClassificationTable(Map<Set<String>, Map<String, Long>> tableGrouped, IdentificationGenerator identificationGenerator) {
         this.identificationGenerator = identificationGenerator;
@@ -148,5 +149,13 @@ public class ClassificationTable {
                 writer.newLine();
             }
         }
+    }
+
+    public RawTable getRawTable() {
+        return rawTable;
+    }
+
+    public void setRawTable(RawTable rawTable) {
+        this.rawTable = rawTable;
     }
 }

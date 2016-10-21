@@ -205,24 +205,25 @@ public class RawTable {
         return new ClassificationTable(tableGrouped, identificationGenerator);
     }
 
-    public void save(String fileName) {
+    public JSONObject toJSONObject() {
         JSONObject root = new JSONObject();
 
         //Actual date
         DateFormat format = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss");
         root.put("date", format.format(new Date()));
-
         //Identifications
         root.put("identifications", identifications);
-
         //Groups
         root.put("groups", groups);
-
         //Table
         root.put("table", table);
 
+        return root;
+    }
+
+    public void save(String fileName) {
         try (FileWriter writer = new FileWriter(fileName)) {
-            root.writeJSONString(writer);
+            toJSONObject().writeJSONString(writer);
         }
         catch (IOException ex) {
             System.err.println("Cannot save table as json to file '" + fileName + "'");
