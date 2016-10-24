@@ -16,11 +16,12 @@ import java.util.*;
 public class ClassificationTable {
     private Map<String, ClassificationRow> table = new TreeMap<>();
     private Map<String, Set<String>> groups = new TreeMap<>();
+    private Map<String, BigDecimal> priorProbability = new TreeMap<>();
 
     private IdentificationGenerator identificationGenerator;
     private RawTable rawTable = null;
 
-    public ClassificationTable(Map<Set<String>, Map<String, Long>> tableGrouped, IdentificationGenerator identificationGenerator) {
+    public ClassificationTable(Map<Set<String>, Map<String, Long>> tableGrouped, IdentificationGenerator identificationGenerator, Map<Set<String>, BigDecimal> groupWeights) {
         this.identificationGenerator = identificationGenerator;
         Map<String, Map<String, Double>> normalized = new TreeMap<>();
 
@@ -37,6 +38,7 @@ public class ClassificationTable {
                 identifications.put(entry.getKey(), (entry.getValue() * 100.0)/sum);
             }
             normalized.put(groupName, identifications);
+            priorProbability.put(groupName, groupWeights.get(group));
         }
 
         Set<String> allIdentifications = new TreeSet<>();
@@ -49,7 +51,7 @@ public class ClassificationTable {
             for (String groupName : groups.keySet()) {
                 Double val = normalized.get(groupName).get(identification);
                 if (val != null) {
-                    row.put(groupName, BigDecimal.valueOf(val));
+                    row.put(groupName, BigDecimal.valueOf(val).multiply(priorProbability.get(groupName)));
                 }
             }
             ClassificationRow classificationRow = new ClassificationRow(row);

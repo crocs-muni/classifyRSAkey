@@ -94,6 +94,6 @@ public class SourceParser extends Thread {
             }
         }
 
-        rawTable.addSource(source, identificationsCount);
+        rawTable.addSource(source, identificationsCount, RawTable.DEFAULT_SOURCE_WEIGHT);
     }
 }
