@@ -1,1 +1,1 @@
-{"p":"{$p}", "q":"{$q}", "n":"{$n}", "ordered":{$ordered}, "occurrence":{$occurrence}, "source":{$source}, "info":{$info}, "batch":{$batch}, "vector":{$vector}, "probabilities":[{$probabilities}]}{$commaornothing}
+{"p":"{$p}", "q":"{$q}", "n":"{$n}", "ordered":{$ordered}, "occurrence":{$occurrence}, "source":{$source}, "info":{$info}, "batch":{$batch}, "vector":{$vector}, "probabilities":[{$probabilities}]}

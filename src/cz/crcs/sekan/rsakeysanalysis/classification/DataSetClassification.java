@@ -225,7 +225,7 @@ public class DataSetClassification {
         }
 
         try {
-            datasetWriter.write("{"); // start of object
+            datasetWriter.write("{"); // start of meta information object
             datasetWriter.write("\"groups\":"); // start of array for groups
 
             JSONArray groupsArray = new JSONArray();
@@ -243,15 +243,12 @@ public class DataSetClassification {
             groupsArray.addAll(groups);
             groupsArray.writeJSONString(datasetWriter);
 
-            datasetWriter.writeln(","); // end of array for groups
-
             if (table.getRawTable() != null) {
-                datasetWriter.writeln("\"table\":");
+                datasetWriter.write(", \"table\":");
                 table.getRawTable().toJSONObject().writeJSONString(datasetWriter);
-                datasetWriter.writeln(",");
             }
+            datasetWriter.writeln("}"); // end of array for groups
 
-            datasetWriter.writeln("\"dataset\":["); // start of array for dataset
         } catch (IOException e) {
             System.err.println("Error while writing classification info to file 'dataset.csv'.");
         }
@@ -304,8 +301,6 @@ public class DataSetClassification {
                     fullClassificationContainerResult.setVariable("batch", Long.valueOf(batchId).toString());
                     fullClassificationContainerResult.setVariable("vector", vectors);
                     fullClassificationContainerResult.setVariable("probabilities", values);
-                    fullClassificationContainerResult.setVariable("commaornothing",
-                            (batchCount == batchId + 1) && (++keyId == keyCount) ? "" : ",");
                     datasetWriter.write(fullClassificationContainerResult.generateString());
                 } catch (IOException ex) {
                     System.err.println("Error while writing dataset to file.");
@@ -316,8 +311,6 @@ public class DataSetClassification {
         }
 
         try {
-            datasetWriter.write("]"); // end of array for dataset
-            datasetWriter.write("}"); // end of object
             datasetWriter.close();
         } catch (IOException e) {
             System.err.println("Error while closing dataset.json");
