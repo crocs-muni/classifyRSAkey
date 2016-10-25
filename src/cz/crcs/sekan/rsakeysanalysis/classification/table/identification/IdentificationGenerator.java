@@ -11,6 +11,8 @@ import java.util.stream.Collectors;
  * @version 20.04.2016
  */
 public class IdentificationGenerator {
+    public static final String TRANSFORMATION_SEPARATOR = "|";
+
     /**
      * Array of transformations
      */
@@ -33,6 +35,6 @@ public class IdentificationGenerator {
         List<String> identifications = transformations.stream()
                 .map(transformation -> transformation.transform(key))
                 .collect(Collectors.toList());
-        return String.join("|", identifications);
+        return String.join(TRANSFORMATION_SEPARATOR, identifications);
     }
 }
