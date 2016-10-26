@@ -163,29 +163,23 @@ public class ClassificationKey {
 
             if (infoB != null) {
                 for (Object obj : infoB.keySet()) {
-                    if (!infoA.containsKey(obj)) {
-                        infoA.put(obj, infoB.get(obj));
+                    Object infoPartA = infoA.get(obj);
+                    Object infoPartB = infoB.get(obj);
+                    List<Object> list = new LinkedList<>();
+                    if (infoPartA instanceof Collection) {
+                        list.addAll((Collection<?>) infoPartA);
                     } else {
-                        Object infoPartA = infoA.get(obj);
-                        Object infoPartB = infoB.get(obj);
-                        Set<Object> set = new HashSet<>();
-                        if (infoPartA instanceof Collection) {
-                            set.addAll((Collection<?>)infoPartA);
-                        }
-                        else {
-                            set.add(infoPartA);
-                        }
-                        if (infoPartB instanceof Collection) {
-                            set.addAll((Collection<?>)infoPartB);
-                        }
-                        else {
-                            set.add(infoPartB);
-                        }
-                        JSONArray array = new JSONArray();
-                        array.addAll(set);
-                        infoA.remove(obj);
-                        infoA.put(obj, array);
+                        list.add(infoPartA);
                     }
+                    if (infoPartB instanceof Collection) {
+                        list.addAll((Collection<?>) infoPartB);
+                    } else {
+                        list.add(infoPartB);
+                    }
+                    JSONArray array = new JSONArray();
+                    array.addAll(list);
+                    infoA.remove(obj);
+                    infoA.put(obj, array);
                 }
             }
             key.setInfo(infoA);

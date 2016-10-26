@@ -211,6 +211,7 @@ public class DataSetClassification {
                         mainContainer.add(container.getNumOfKeys(), container.getRow(), container.getKeys());
                     }
                 }
+                mainContainer.getRow().normalize();
                 parsedData.put(stringKey, mainContainer);
             }
         }
@@ -220,7 +221,7 @@ public class DataSetClassification {
         try {
             datasetWriter = new ExtendedWriter(pathToFolderWithResults + "dataset.json");
         } catch (IOException ex) {
-            System.err.println("Error while opening file 'dataset.csv' for results.");
+            System.err.println("Error while opening file 'dataset.json' for results.");
             return;
         }
 
@@ -250,7 +251,7 @@ public class DataSetClassification {
             datasetWriter.writeln("}"); // end of array for groups
 
         } catch (IOException e) {
-            System.err.println("Error while writing classification info to file 'dataset.csv'.");
+            System.err.println("Error while writing classification info to file 'dataset.json'.");
         }
 
         //Reconstruct original dataset with results of each classification container
@@ -264,15 +265,12 @@ public class DataSetClassification {
         }
 
         long batchId = 0;
-        int batchCount = parsedData.keySet().size();
 
         for (Set<String> batchKey : parsedData.keySet()) {
             ClassificationContainer container = parsedData.get(batchKey);
             ClassificationRow row = container.getRow();
             List<ClassificationKey> keys = container.getKeys();
 
-            int keyId = 0;
-            int keyCount = keys.size();
             for (ClassificationKey key : keys) {
                 try {
                     String values = "";
@@ -314,6 +312,112 @@ public class DataSetClassification {
             datasetWriter.close();
         } catch (IOException e) {
             System.err.println("Error while closing dataset.json");
+            return;
+        }
+
+        try {
+            datasetWriter = new ExtendedWriter(pathToFolderWithResults + "dataset.csv");
+            datasetWriter.write("subject_dn,valid_start,valid_end,modulus,p,q,suspected_vendor,key_id,batch_id,batch_size,duplicity_id,duplicity_count,classification");
+            for (String groupName : table.getGroupsNames()) {
+                datasetWriter.write(",");
+                datasetWriter.write(groupName);
+            }
+            datasetWriter.newLine();
+        } catch (IOException ex) {
+            System.err.println("Error while opening file 'dataset.csv' for results.");
+            return;
+        }
+
+        //Reconstruct original dataset with results of each key in each classification container
+        Template completeClassificationContainerResult;
+        try {
+            completeClassificationContainerResult = new Template("completeClassificationContainerResult.csv");
+        }
+        catch (IOException ex) {
+            System.err.println("Error while creating template from file 'completeClassificationContainerResult.csv': " + ex.getMessage());
+            return;
+        }
+
+        batchId = 0;
+        long uniqueKeyId = 0;
+        boolean pqDataset = true;
+
+        for (Set<String> batchKey : parsedData.keySet()) {
+            if (!pqDataset) {break;}
+            ClassificationContainer container = parsedData.get(batchKey);
+            ClassificationRow row = container.getRow();
+            List<ClassificationKey> keys = container.getKeys();
+
+            int batchSize = keys.size();
+            for (ClassificationKey key : keys) {
+                try {
+                    Set<String> attributeNames = key.getInfo().keySet();
+                    if (!attributeNames.contains("subject_dn") || !attributeNames.contains("valid_start")
+                            || !attributeNames.contains("valid_end") || !attributeNames.contains("suspected_vendor")) {
+                        // this is not PQ dataset
+                        System.out.println("Info: Not a PQ dataset");
+                        pqDataset = false;
+                        break;
+                    }
+
+                    List<String> subjects = extractAttributes("subject_dn", key.getInfo());
+                    List<String> validStarts = extractAttributes("valid_start", key.getInfo());
+                    List<String> validEnds = extractAttributes("valid_end", key.getInfo());
+                    List<String> suspectedVendors = extractAttributes("suspected_vendor", key.getInfo());
+
+                    int actualKeyCount = Arrays.asList(subjects.size(), validStarts.size(), validEnds.size(), suspectedVendors.size())
+                            .stream().min((o1, o2) -> o1.compareTo(o2) < 0 ? o1 : o2).orElseGet(() -> 0);
+
+                    if (key.getCount() != actualKeyCount) {
+                        System.err.println("Warning: the number of attribute values does not match the number of keys");
+                    }
+
+                    Set<String> vectorList = table.generationIdentification(key);
+                    String vectors = "";
+                    for (Iterator<String> iterator = vectorList.iterator(); iterator.hasNext(); ) {
+                        vectors = vectors.concat(iterator.next());
+                        if (iterator.hasNext()) vectors = vectors.concat(",");
+                    }
+
+
+                    String values = "";
+                    for (String groupName : table.getGroupsNames()) {
+                        BigDecimal val = row.getSource(groupName);
+                        values += (values.length() > 0 ? "," : "");
+                        if (val != null) { values += val.doubleValue(); } else { values += "0"; }
+                    }
+
+                    for (int i = 0; i < actualKeyCount; i++) {
+                        completeClassificationContainerResult.resetVariables();
+                        completeClassificationContainerResult.setVariable("p", key.getRsaKey().getP().toString(16));
+                        completeClassificationContainerResult.setVariable("q", key.getRsaKey().getQ().toString(16));
+                        completeClassificationContainerResult.setVariable("modulus", key.getRsaKey().getModulus().toString(16));
+                        completeClassificationContainerResult.setVariable("subject_dn", subjects.get(i).replace(",", ";"));
+                        completeClassificationContainerResult.setVariable("valid_start", validStarts.get(i));
+                        completeClassificationContainerResult.setVariable("valid_end", validEnds.get(i));
+                        completeClassificationContainerResult.setVariable("suspected_vendor", suspectedVendors.get(i));
+                        completeClassificationContainerResult.setVariable("unique_id", Long.valueOf(uniqueKeyId).toString());
+                        completeClassificationContainerResult.setVariable("batch_id", Long.valueOf(batchId).toString());
+                        completeClassificationContainerResult.setVariable("batch_size", Long.valueOf(batchSize).toString());
+                        completeClassificationContainerResult.setVariable("duplicity_id", Long.valueOf(i).toString());
+                        completeClassificationContainerResult.setVariable("duplicity_count", Long.valueOf(actualKeyCount).toString());
+                        completeClassificationContainerResult.setVariable("vector", vectors);
+                        completeClassificationContainerResult.setVariable("probabilities", values);
+                        datasetWriter.write(completeClassificationContainerResult.generateString());
+                        uniqueKeyId++;
+                    }
+                } catch (IOException ex) {
+                    System.err.println("Error while writing dataset to file.");
+                }
+            }
+
+            batchId++;
+        }
+
+        try {
+            datasetWriter.close();
+        } catch (IOException e) {
+            System.err.println("Error while closing dataset.csv");
             return;
         }
 
@@ -473,6 +577,21 @@ public class DataSetClassification {
                 System.err.println("Error while writing result to file '" + file + ".csv'.");
             }
         }
+    }
+
+    private static List<String> extractAttributes(String attributeName, JSONObject jsonObject) {
+        Object possibleAttributes = jsonObject.get(attributeName);
+        List<String> attributes = new LinkedList<>();
+        if (possibleAttributes == null) {
+            System.err.println("Warning: null " + attributeName);
+        } else if (possibleAttributes instanceof String) {
+            attributes.add((String) possibleAttributes);
+        } else if (possibleAttributes instanceof Collection) {
+            attributes.addAll((Collection<String>) possibleAttributes);
+        } else {
+            System.err.println("Warning: " + attributeName + " of invalid type: " + possibleAttributes.getClass());
+        }
+        return attributes;
     }
 
     protected Pair<String, String> positiveVectorToCsv(Map<String, BigDecimal> vector, Long count) {

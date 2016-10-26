@@ -1,0 +1,1 @@
+{$subject_dn},{$valid_start},{$valid_end},{$modulus},{$p},{$q},{$suspected_vendor},{$unique_id},{$batch_id},{$batch_size},{$duplicity_id},{$duplicity_count},{$vector},{$probabilities}
