@@ -317,11 +317,8 @@ public class DataSetClassification {
 
         try {
             datasetWriter = new ExtendedWriter(pathToFolderWithResults + "dataset.csv");
-            datasetWriter.write("subject_dn,valid_start,valid_end,modulus,p,q,suspected_vendor,key_id,batch_id,batch_size,duplicity_id,duplicity_count,classification");
-            for (String groupName : table.getGroupsNames()) {
-                datasetWriter.write(",");
-                datasetWriter.write(groupName);
-            }
+            datasetWriter.write("subject_dn,valid_start,valid_end,modulus,p,q,suspected_vendor,key_id,batch_id," +
+                    "batch_size,duplicity_id,duplicity_count,classification,probable,possible,impossible");
             datasetWriter.newLine();
         } catch (IOException ex) {
             System.err.println("Error while opening file 'dataset.csv' for results.");
@@ -380,11 +377,32 @@ public class DataSetClassification {
                     }
 
 
-                    String values = "";
+                    StringBuilder probableGroups = new StringBuilder();
+                    StringBuilder possibleGroups = new StringBuilder();
+                    StringBuilder impossibleGroups = new StringBuilder();
+
+                    List<Pair<String, BigDecimal>> groupProbabilities = new ArrayList<>(table.getGroupsNames().size());
+
                     for (String groupName : table.getGroupsNames()) {
                         BigDecimal val = row.getSource(groupName);
-                        values += (values.length() > 0 ? "," : "");
-                        if (val != null) { values += val.doubleValue(); } else { values += "0"; }
+                        if (val == null || val.equals(BigDecimal.ZERO)) {
+                            if (!impossibleGroups.toString().isEmpty()) impossibleGroups.append(";");
+                            impossibleGroups.append(groupName);
+                        } else {
+                            groupProbabilities.add(new Pair<String, BigDecimal>(groupName, val));
+                        }
+                    }
+
+                    groupProbabilities.sort((o1, o2) -> o2.getValue().compareTo(o1.getValue()));
+
+                    for (Pair<String, BigDecimal> probability : groupProbabilities) {
+                        if (probability.getValue().doubleValue() > 0.1) {
+                            if (!probableGroups.toString().isEmpty()) probableGroups.append(";");
+                            probableGroups.append(probability.getKey());
+                        } else if (probability.getValue().doubleValue() > 0.05) {
+                            if (!possibleGroups.toString().isEmpty()) possibleGroups.append(";");
+                            possibleGroups.append(probability.getKey());
+                        }
                     }
 
                     for (int i = 0; i < actualKeyCount; i++) {
@@ -402,7 +420,9 @@ public class DataSetClassification {
                         completeClassificationContainerResult.setVariable("duplicity_id", Long.valueOf(i).toString());
                         completeClassificationContainerResult.setVariable("duplicity_count", Long.valueOf(actualKeyCount).toString());
                         completeClassificationContainerResult.setVariable("vector", vectors);
-                        completeClassificationContainerResult.setVariable("probabilities", values);
+                        completeClassificationContainerResult.setVariable("probable", probableGroups.toString());
+                        completeClassificationContainerResult.setVariable("possible", possibleGroups.toString());
+                        completeClassificationContainerResult.setVariable("impossible", impossibleGroups.toString());
                         datasetWriter.write(completeClassificationContainerResult.generateString());
                         uniqueKeyId++;
                     }
