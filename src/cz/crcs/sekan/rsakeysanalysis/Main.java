@@ -108,6 +108,13 @@ public class Main {
                 case "--batchesHistogram":
                     BatchesHistogram.run(args[++i], args[++i]);
                     break;
+                case "-csv":
+                case "--convertToCsv":
+                    RawTable tableForCsv = RawTable.load(args[++i]);
+                    ClassificationTable classificationTableForCsv = tableForCsv.computeClassificationTable();
+                    classificationTableForCsv.setRawTable(tableForCsv);
+                    JsonSetToCsv.run(classificationTableForCsv, args[++i], args[++i], args[++i], args[++i]);
+                    break;
                 default:
                     System.out.println("Undefined parameter '" + args[i] + "'");
             }

@@ -103,7 +103,7 @@ public class DataSetClassification {
                 if (jsonLine.length() == 0) continue;
 
                 try {
-                    ClassificationKey key = new ClassificationKey(jsonLine);
+                    ClassificationKey key = ClassificationKey.fromJson(jsonLine);
                     //Check for modulus factors (p or q)
                     if (modulusFactors != null) {
                         BigInteger factor = modulusFactors.getFactor(key.getRsaKey());

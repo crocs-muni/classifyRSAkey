@@ -2,6 +2,7 @@ package cz.crcs.sekan.rsakeysanalysis.classification.key;
 
 import cz.crcs.sekan.rsakeysanalysis.common.RSAKey;
 import cz.crcs.sekan.rsakeysanalysis.common.exception.WrongKeyException;
+import cz.crcs.sekan.rsakeysanalysis.template.Template;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -48,36 +49,124 @@ public class ClassificationKey {
     private List<ClassificationFactor> qmoFactors = null;
     private List<ClassificationFactor> qpoFactors = null;
 
+    private ClassificationKey() {
+    }
+
     /**
      * Construct key from json object
      * @param json string contains json object of key
      * @throws ParseException Cannot parse json string
      * @throws WrongKeyException Key does not contain n or p and q
      */
-    public ClassificationKey(String json) throws ParseException, WrongKeyException {
+    public static ClassificationKey fromJson(String json) throws ParseException, WrongKeyException {
+        if (isNewJsonFormat(json)) {
+            return fromNewJsonFormat(json);
+        } else {
+            return fromOldJsonFormat(json);
+        }
+    }
+
+    private static boolean isNewJsonFormat(String json) throws ParseException {
         JSONParser parser = new JSONParser();
         JSONObject object = (JSONObject)parser.parse(json);
-        if (!object.containsKey("n") && (!object.containsKey("p") || !object.containsKey("q"))) {
+        return !(!object.containsKey("n") && (!object.containsKey("p") || !object.containsKey("q")));
+    }
+
+    public static ClassificationKey fromNewJsonFormat(String json) throws ParseException, WrongKeyException {
+        ClassificationKey key = new ClassificationKey();
+
+        JSONParser parser = new JSONParser();
+        JSONObject object = (JSONObject)parser.parse(json);
+        if (!isNewJsonFormat(json)) {
             throw new WrongKeyException("Key does not contain n or p and q.");
         }
-        if (object.containsKey("n")) rsaKey.setModulus(BigIntegerConversion.fromString((String)object.get("n")));
-        if (object.containsKey("e")) rsaKey.setExponent(BigIntegerConversion.fromString((String)object.get("e")));
-        if (object.containsKey("p")) rsaKey.setP(BigIntegerConversion.fromString((String)object.get("p")));
-        if (object.containsKey("q")) rsaKey.setQ(BigIntegerConversion.fromString((String)object.get("q")));
-        if (object.containsKey("ordered")) ordered = (Boolean)object.get("ordered");
-        if (object.containsKey("count")) count = ((Number)object.get("count")).intValue();
+        if (object.containsKey("n")) key.rsaKey.setModulus(BigIntegerConversion.fromString((String)object.get("n")));
+        if (object.containsKey("e")) key.rsaKey.setExponent(BigIntegerConversion.fromString((String)object.get("e")));
+        if (object.containsKey("p")) key.rsaKey.setP(BigIntegerConversion.fromString((String)object.get("p")));
+        if (object.containsKey("q")) key.rsaKey.setQ(BigIntegerConversion.fromString((String)object.get("q")));
+        if (object.containsKey("ordered")) key.ordered = (Boolean)object.get("ordered");
+        if (object.containsKey("count")) key.count = ((Number)object.get("count")).intValue();
         if (object.containsKey("source")) {
-            source = new HashSet<>();
+            key.source = new HashSet<>();
             JSONArray array = (JSONArray)object.get("source");
             for (Object sourcePart : array) {
-                source.add((String)sourcePart);
+                key.source.add((String)sourcePart);
             }
         }
-        if (object.containsKey("info")) info = (JSONObject)object.get("info");
-        if (object.containsKey("p-1 factors")) pmoFactors = parseArrayOfFactors((JSONArray)object.get("p-1 factors"));
-        if (object.containsKey("p+1 factors")) ppoFactors = parseArrayOfFactors((JSONArray)object.get("p+1 factors"));
-        if (object.containsKey("q-1 factors")) qmoFactors = parseArrayOfFactors((JSONArray)object.get("q-1 factors"));
-        if (object.containsKey("q+1 factors")) qpoFactors = parseArrayOfFactors((JSONArray)object.get("q+1 factors"));
+        if (object.containsKey("info")) key.info = (JSONObject)object.get("info");
+        if (object.containsKey("p-1 factors")) key.pmoFactors = parseArrayOfFactors((JSONArray)object.get("p-1 factors"));
+        if (object.containsKey("p+1 factors")) key.ppoFactors = parseArrayOfFactors((JSONArray)object.get("p+1 factors"));
+        if (object.containsKey("q-1 factors")) key.qmoFactors = parseArrayOfFactors((JSONArray)object.get("q-1 factors"));
+        if (object.containsKey("q+1 factors")) key.qpoFactors = parseArrayOfFactors((JSONArray)object.get("q+1 factors"));
+
+        return key;
+    }
+
+    public static ClassificationKey fromOldJsonFormat(String json) throws ParseException, WrongKeyException {
+        ClassificationKey key = new ClassificationKey();
+
+        JSONParser parser = new JSONParser();
+        String subjectId = "common_name";
+        //Check if certificate has a valid json format (rsa_public_key, subject and validity property is needed)
+        JSONObject obj = (JSONObject) parser.parse(json);
+        if (!obj.containsKey("rsa_public_key") ||
+                !obj.containsKey("subject") ||
+                !obj.containsKey("validity"))
+            throw new WrongKeyException("Key does not contain rsa_public_key or subject or validity.");
+
+        //Read all needed information about certificate
+        //Property count is not necessary, represent number of duplicities in source key set
+        Number countNumber = 1;
+        if (obj.containsKey("count")) countNumber = (Number) obj.get("count");
+        long count = countNumber.longValue();
+
+        //Property validity has to have property start with date
+        //If date has W3C date and time format or similar, only date is extracted
+        JSONObject validity = (JSONObject) obj.get("validity");
+        String validityStart = (String) validity.get("start");
+        String validityStartByDay = validityStart;
+        if (validityStart.contains("T")) {
+            validityStartByDay = validityStart.split("T")[0];
+        }
+
+        //Property rsa_public_key has to have properties modulus and exponent
+        JSONObject rsa_public_key = (JSONObject) obj.get("rsa_public_key");
+        String modulus = (String) rsa_public_key.get("modulus");
+        Object exponentObject = rsa_public_key.get("exponent");
+        BigInteger exponent;
+        try {
+            exponent = BigInteger.valueOf(((Number) exponentObject).longValue());
+        } catch (ClassCastException ex) {
+            exponent = new BigInteger((String) exponentObject, 16);
+        }
+
+        //Property subject has to have property common_name
+        JSONObject subject = (JSONObject) obj.get("subject");
+        if (!subject.containsKey(subjectId)) throw new WrongKeyException("Key does not contain subject.");
+        String subjectIdValue = subject.get(subjectId).toString();
+
+        key.source = new HashSet<>();
+        key.source.add(subjectIdValue);
+        key.source.add(validityStartByDay);
+
+        //Create public key object
+        key.rsaKey = new RSAKey(modulus, exponent);
+
+        key.info = obj;
+
+        return key;
+    }
+
+    public String toStringByTemplate(Template template) {
+        template.resetVariables();
+        if (getRsaKey().getP() != null) template.setVariable("p", getRsaKey().getP().toString(16));
+        if (getRsaKey().getQ() != null) template.setVariable("q", getRsaKey().getQ().toString(16));
+        if (getRsaKey().getModulus() != null) template.setVariable("n", getRsaKey().getModulus().toString(16));
+        template.setVariable("ordered", Boolean.valueOf(isOrdered()).toString());
+        template.setVariable("occurrence", Long.valueOf(getCount()).toString());
+        if (getSource() != null) template.setVariable("source", getSource().toString());
+        if (getInfo() != null) template.setVariable("info", getInfo().toString());
+        return template.generateString();
     }
 
     /**
@@ -198,7 +287,7 @@ public class ClassificationKey {
      * @param array json array of factors
      * @return list of parsed factors
      */
-    protected List<ClassificationFactor> parseArrayOfFactors(JSONArray array) {
+    protected static List<ClassificationFactor> parseArrayOfFactors(JSONArray array) {
         List<ClassificationFactor> factors = new ArrayList<>();
         for (Object f : array) {
             JSONObject factor = (JSONObject)f;

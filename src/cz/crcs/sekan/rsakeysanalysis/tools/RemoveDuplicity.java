@@ -29,7 +29,7 @@ public class RemoveDuplicity {
                 }
 
                 try {
-                    ClassificationKey key = new ClassificationKey(line);
+                    ClassificationKey key = ClassificationKey.fromJson(line);
                     keys++;
                     BigInteger modulus = key.getRsaKey().getModulus();
                     ClassificationKey data = uniqueSet.get(modulus);

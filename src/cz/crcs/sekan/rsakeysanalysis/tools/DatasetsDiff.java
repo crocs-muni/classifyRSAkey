@@ -25,7 +25,7 @@ public class DatasetsDiff {
                 lineNumber++;
                 if (line.trim().length() == 0) continue;
                 try {
-                    keys.add(new ClassificationKey(line));
+                    keys.add(ClassificationKey.fromJson(line));
                 }
                 catch (Exception ex) {
                     System.err.println("Cannot read key on line '" + lineNumber +"' from dataset '" + dataSetA + "'.");
@@ -77,7 +77,7 @@ public class DatasetsDiff {
                         lineNumber++;
                         if (line.trim().length() == 0) continue;
                         try {
-                            ClassificationKey key = new ClassificationKey(line);
+                            ClassificationKey key = ClassificationKey.fromJson(line);
                             boolean same = false;
                             for (ClassificationKey tmpKey : keys) {
                                 if (tmpKey.getRsaKey().getModulus().equals(key.getRsaKey().getModulus())) {
