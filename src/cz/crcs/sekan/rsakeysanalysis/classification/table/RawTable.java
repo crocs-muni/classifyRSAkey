@@ -15,6 +15,7 @@ import org.json.simple.parser.ParseException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.text.DateFormat;
@@ -31,6 +32,8 @@ public class RawTable {
      */
     public static final double DEFAULT_MAX_EUCLIDEAN_DISTANCE = 0.02;
 
+    public static final BigDecimal DEFAULT_SOURCE_WEIGHT = BigDecimal.ONE;
+
     /**
      * Map of sources contains map of identification
      * Source -> Identification -> Count
@@ -41,9 +44,12 @@ public class RawTable {
 
     private JSONObject groups;
 
+    private Map<String, BigDecimal> sourceWeights;
+
     public RawTable(JSONArray identifications, JSONObject groups) {
         this.identifications = identifications;
         this.groups = groups;
+        this.sourceWeights = new TreeMap<>();
     }
 
     public double getMaxEuclideanDistanceForGroup() {
@@ -65,8 +71,9 @@ public class RawTable {
         return representants;
     }
 
-    public synchronized void addSource(String source, Map<String, Long> identificationsCount) {
+    public synchronized void addSource(String source, Map<String, Long> identificationsCount, BigDecimal sourceWeight) {
         table.put(source, identificationsCount);
+        sourceWeights.put(source, sourceWeight);
     }
 
     public Map<String, Map<String, Long>> getTable() {
@@ -197,12 +204,24 @@ public class RawTable {
     public ClassificationTable computeClassificationTable() throws WrongTransformationFormatException, TransformationNotFoundException {
         Map<Set<String>, Map<String, Long>> tableGrouped = computeTableGrouped();
 
+        Map<Set<String>, BigDecimal> groupWeights = new HashMap<>();
+
+        for (Set<String> group : tableGrouped.keySet()) {
+            BigDecimal max = BigDecimal.ZERO;
+            for (String source : group) {
+                max = max.max(sourceWeights.get(source));
+            }
+            Set<String> hashGroup = new HashSet<>();
+            hashGroup.addAll(group);
+            groupWeights.put(hashGroup, max);
+        }
+
         List<Transformation> transformations = new ArrayList<>();
         for (Object identificationPart : identifications) {
             transformations.add(Transformation.createFromIdentificationPart((JSONObject)identificationPart));
         }
         IdentificationGenerator identificationGenerator = new IdentificationGenerator(transformations);
-        return new ClassificationTable(tableGrouped, identificationGenerator);
+        return new ClassificationTable(tableGrouped, identificationGenerator, groupWeights);
     }
 
     public JSONObject toJSONObject() {
@@ -217,6 +236,7 @@ public class RawTable {
         root.put("groups", groups);
         //Table
         root.put("table", table);
+        root.put("weights", sourceWeights);
 
         return root;
     }
@@ -236,9 +256,24 @@ public class RawTable {
             JSONObject root = (JSONObject)parser.parse(reader);
             JSONArray identifications = (JSONArray) root.get("identifications");
             JSONObject groups = (JSONObject)root.get("groups");
+            JSONObject sourceWeightsObject = (JSONObject)root.get("weights");
 
             RawTable rawTable = new RawTable(identifications, groups);
             rawTable.table = (Map<String, Map<String, Long>>)root.get("table");
+
+            for (String sourceName : rawTable.table.keySet()) {
+                Object value = sourceWeightsObject.get(sourceName);
+                if (value == null) {
+                    rawTable.sourceWeights.put(sourceName, DEFAULT_SOURCE_WEIGHT);
+                }
+                if (value instanceof Long) {
+                    rawTable.sourceWeights.put(sourceName, BigDecimal.valueOf((Long) value));
+                } else if (value instanceof Double) {
+                    rawTable.sourceWeights.put(sourceName, BigDecimal.valueOf((Double) value));
+                } else {
+                    rawTable.sourceWeights.put(sourceName, (BigDecimal) value);
+                }
+            }
             return rawTable;
         }
     }
@@ -299,7 +334,7 @@ public class RawTable {
                 numOfKeys--;
             }
 
-            testsKeysTable.addSource(source, identificationsCount);
+            testsKeysTable.addSource(source, identificationsCount, RawTable.DEFAULT_SOURCE_WEIGHT);
         }
 
         //Add others to another table
