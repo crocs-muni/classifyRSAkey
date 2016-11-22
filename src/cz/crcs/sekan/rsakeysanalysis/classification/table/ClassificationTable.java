@@ -60,34 +60,11 @@ public class ClassificationTable {
     }
 
     public ClassificationRow classifyKey(ClassificationKey key) {
-        Set<String> identifications = generationIdentification(key);
-        String[] identificationsArray = identifications.toArray((new String[identifications.size()]));
-        if (identificationsArray.length == 1) return table.get(identificationsArray[0]);
-        else {
-            ClassificationRow firstRow = table.get(identificationsArray[0]);
-            ClassificationRow secondRow = table.get(identificationsArray[1]);
-            if (firstRow == null && secondRow == null) return null;
-            else {
-                if (firstRow == null || secondRow == null) {
-                    return (firstRow != null ? firstRow : secondRow);
-                }
-                else {
-                    return firstRow.computeWithNotSameSource(secondRow);
-                }
-            }
-        }
+        return table.get(generationIdentification(key));
     }
 
-    public Set<String> generationIdentification(ClassificationKey key) {
-        Set<String> set = new HashSet<>();
-        if (key.isOrdered()) {
-            set.add(identificationGenerator.generationIdentification(key.getRsaKey()));
-        }
-        else {
-            set.add(identificationGenerator.generationIdentification(key.getRsaKey()));
-            set.add(identificationGenerator.generationIdentification(key.getRsaKey().createReversedPaQ()));
-        }
-        return set;
+    public String generationIdentification(ClassificationKey key) {
+        return identificationGenerator.generationIdentification(key.getRsaKey());
     }
 
     public ClassificationRow classifyIdentification(String identification) {

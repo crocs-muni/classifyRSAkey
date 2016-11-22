@@ -208,8 +208,10 @@ public class RawTable {
 
         for (Set<String> group : tableGrouped.keySet()) {
             BigDecimal max = BigDecimal.ZERO;
+
             for (String source : group) {
-                max = max.max(sourceWeights.get(source));
+                BigDecimal weight = sourceWeights.get(source);
+                max = max.max(weight == null ? BigDecimal.ZERO : weight);
             }
             Set<String> hashGroup = new HashSet<>();
             hashGroup.addAll(group);
@@ -262,11 +264,14 @@ public class RawTable {
             rawTable.table = (Map<String, Map<String, Long>>)root.get("table");
 
             for (String sourceName : rawTable.table.keySet()) {
-                Object value = sourceWeightsObject.get(sourceName);
+                Object value = null;
+                if (sourceWeightsObject != null) {
+                    value = sourceWeightsObject.get(sourceName);
+                }
+
                 if (value == null) {
                     rawTable.sourceWeights.put(sourceName, DEFAULT_SOURCE_WEIGHT);
-                }
-                if (value instanceof Long) {
+                } else if (value instanceof Long) {
                     rawTable.sourceWeights.put(sourceName, BigDecimal.valueOf((Long) value));
                 } else if (value instanceof Double) {
                     rawTable.sourceWeights.put(sourceName, BigDecimal.valueOf((Double) value));

@@ -47,6 +47,24 @@ public class DataSetClassification {
      */
     private DecimalFormat formatter;
 
+    private Set<ClassificationKey> classificationKeys;
+
+    private Map<String, BigDecimal> priorProbabilityForGroups;
+
+    private Map<String, Set<ClassificationKey>> stringPropertyToKeys;
+
+    private Map<Long, ExtendedWriter> outputsAll = new HashMap<>();
+    private Map<Long, Long> groupsCount = new HashMap<>();
+    private Map<Long, Long> groupsCountUnique = new HashMap<>();
+    private Map<Long, Map<String, BigDecimal>> groupsPositiveCountAll = new HashMap<>();
+    private Map<Long, Map<String, BigDecimal>> groupsPositiveCountUniqueAll = new HashMap<>();
+    private Map<Long, Map<String, Long>> groupsNegativeCountAll = new HashMap<>();
+    private Map<Long, Map<String, Long>> groupsNegativeCountUniqueAll = new HashMap<>();
+    private List<Pair<Long, Long>> minMaxKeys = new ArrayList<>();
+
+    private Template resultTemplate;
+    private ExtendedWriter datasetWriter;
+
     public DataSetClassification(ClassificationTable table, String pathToDataSet, String pathToFolderWithResults) {
         if (table == null) throw new IllegalArgumentException("Table in DataSetClassification constructor cannot be null.");
         if (pathToDataSet == null) throw new IllegalArgumentException("Path to dataset in DataSetClassification constructor cannot be null.");
@@ -72,6 +90,10 @@ public class DataSetClassification {
         DecimalFormatSymbols decimalFormatter = new DecimalFormatSymbols();
         decimalFormatter.setDecimalSeparator('.');
         this.formatter = new DecimalFormat("#0.00000000", decimalFormatter);
+
+        this.classificationKeys = new HashSet<>();
+        this.priorProbabilityForGroups = new HashMap<>();
+        this.stringPropertyToKeys = new HashMap<>();
     }
 
     public void setModulusFactors(ModulusFactors modulusFactors) {
@@ -82,7 +104,371 @@ public class DataSetClassification {
         this.classificationTableForNotClassify = classificationTableForNotClassify;
     }
 
+    private void readDatasetAndPrintMasks() {
+        try (BufferedReader reader = new BufferedReader(new FileReader(pathToDataSet))) {
+            String jsonLine;
+            long lineNumber = 0;
+            while ((jsonLine = reader.readLine()) != null) {
+                lineNumber++;
+                //Count the lines and each 100000 print actual line
+                //if (lineNumber % 100000 == 0) System.out.println("Parsed " + lineNumber + " lines.");
+
+                //Skip blank lines
+                if (jsonLine.length() == 0) continue;
+
+                try {
+                    System.out.println(table.generationIdentification(ClassificationKey.fromJson(jsonLine)));
+                } catch (Exception ex) {
+                    //System.err.println("Error: cannot parse line " + lineNumber + ": " + ex.getMessage());
+                    //System.err.println("Json line: " + jsonLine);
+                }
+            }
+        } catch (IOException ex) {
+            System.err.println("Error while reading file '" + pathToDataSet + "'.");
+        }
+    }
+
+    private void readDatasetAndComputeMasks(boolean reconstructibleDataset) {
+        try (BufferedReader reader = new BufferedReader(new FileReader(pathToDataSet))) {
+            String jsonLine;
+            long lineNumber = 0;
+            while ((jsonLine = reader.readLine()) != null) {
+                lineNumber++;
+                //Count the lines and each 100000 print actual line
+                if (lineNumber % 100000 == 0) System.out.println("Parsed " + lineNumber + " lines.");
+
+                //Skip blank lines
+                if (jsonLine.length() == 0) continue;
+
+                try {
+                    // TODO propagate extra data for reconstruction
+                    ClassificationKey key = ClassificationKey.fromJson(jsonLine);
+                    key.setIdentification(table.generationIdentification(key));
+                    classificationKeys.add(key);
+                } catch (Exception ex) {
+                    System.err.println("Error: cannot parse line " + lineNumber + ": " + ex.getMessage());
+                    System.err.println("Json line: " + jsonLine);
+                }
+            }
+        } catch (IOException ex) {
+            System.err.println("Error while reading file '" + pathToDataSet + "'.");
+        }
+    }
+
+    private void computePriorProbability() {
+        // TODO compute from mask distribution
+
+        // TODO from table vs. computed
+        int groupCount = table.getGroupsNames().size();
+        //BigDecimal uniformProbability = BigDecimal.ONE.divide(BigDecimal.valueOf(groupCount)); // TODO
+        BigDecimal uniformProbability = BigDecimal.ONE;
+        for (String groupName : table.getGroupsNames()) {
+            priorProbabilityForGroups.put(groupName, uniformProbability);
+        }
+    }
+
+    private interface PropertyExtractor<Property> {
+        public List<Property> extractProperty(ClassificationKey key);
+    }
+
+    private class SourcePropertyExtractor implements PropertyExtractor<Set<String>> {
+        @Override
+        public List<Set<String>> extractProperty(ClassificationKey key) {
+            List<Set<String>> sourceSetList = new ArrayList<>(1);
+            sourceSetList.add(key.getSource());
+            return sourceSetList;
+        }
+    }
+
+    private class PrimePropertyExtractor implements PropertyExtractor<BigInteger> {
+        @Override
+        public List<BigInteger> extractProperty(ClassificationKey key) {
+            List<BigInteger> primes = new ArrayList<>(2);
+            primes.add(key.getRsaKey().getP());
+            primes.add(key.getRsaKey().getQ());
+            return primes;
+        }
+    }
+
+    private <Property> void batchKeysByProperty(PropertyExtractor<Property> extractor) {
+        Map<Property, Set<ClassificationKey>> propertyToKeys = new HashMap<>();
+
+        int maxPropertyCount = 0;
+
+        // TODO keys without source
+
+        for (Iterator<ClassificationKey> it = classificationKeys.iterator(); it.hasNext(); ) {
+            ClassificationKey key = it.next();
+            List<Property> batchArguments = extractor.extractProperty(key);
+            maxPropertyCount = Math.max(maxPropertyCount, batchArguments.size());
+            for (Property batchArgument : batchArguments) {
+                Set<ClassificationKey> batch = propertyToKeys.get(batchArgument);
+                if (batch == null) {
+                    Set<ClassificationKey> newBatch = new HashSet<>();
+                    newBatch.add(key);
+                    propertyToKeys.put(batchArgument, newBatch);
+                } else {
+                    batch.add(key);
+                }
+            }
+            it.remove();
+        }
+
+        if (maxPropertyCount > 1) {
+            Map<Set<Property>, Set<ClassificationKey>> propertiesToUniqueKeys = new HashMap<>();
+
+            while (!propertyToKeys.isEmpty()) {
+                Property property = propertyToKeys.keySet().iterator().next();
+
+                Set<ClassificationKey> toProcessKeysWithProperty = propertyToKeys.get(property);
+                Set<ClassificationKey> processedKeysWithProperty = new HashSet<>();
+                propertyToKeys.remove(property);
+
+                Set<Property> commonProperties = new HashSet<Property>();
+                commonProperties.add(property);
+
+                while (!toProcessKeysWithProperty.isEmpty()) {
+                    ClassificationKey processedKey = toProcessKeysWithProperty.iterator().next();
+                    List<Property> newProperties = extractor.extractProperty(processedKey);
+                    commonProperties.addAll(newProperties);
+                    for (Property newProperty : newProperties) {
+                        Set<ClassificationKey> newKeys = propertyToKeys.get(newProperty);
+                        if (newKeys != null) {
+                            toProcessKeysWithProperty.addAll(newKeys);
+                            propertyToKeys.remove(newProperty);
+                        }
+                    }
+                    processedKeysWithProperty.add(processedKey);
+                    toProcessKeysWithProperty.remove(processedKey); // TODO with iterator
+                }
+
+                propertiesToUniqueKeys.put(commonProperties, processedKeysWithProperty);
+            }
+
+            for (Iterator<Map.Entry<Set<Property>, Set<ClassificationKey>>> it = propertiesToUniqueKeys.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<Set<Property>, Set<ClassificationKey>> entry = it.next();
+                stringPropertyToKeys.put(entry.getKey().toString(), entry.getValue());
+                it.remove();
+            }
+        } else {
+            for (Iterator<Map.Entry<Property, Set<ClassificationKey>>> it = propertyToKeys.entrySet().iterator(); it.hasNext(); ) {
+                Map.Entry<Property, Set<ClassificationKey>> entry = it.next();
+                stringPropertyToKeys.put(entry.getKey().toString(), entry.getValue());
+                it.remove();
+            }
+        }
+    }
+
+    private void classify() throws IOException {
+
+        setupStatistics();
+        setupDatasetOutput();
+
+        long keyId = 0;
+        long batchId = 0;
+
+        for (Map.Entry<String, Set<ClassificationKey>> entry : stringPropertyToKeys.entrySet()) {
+            Set<ClassificationKey> batchKeys = entry.getValue();
+            Iterator<ClassificationKey> keyIterator = batchKeys.iterator();
+
+            // TODO table with prior prob -- multiply the tables, do not repeat
+
+            ClassificationKey key = keyIterator.next();
+            ClassificationContainer container = new ClassificationContainer(key.getCount(), table.classifyIdentification(key.getIdentification()));
+
+            while (keyIterator.hasNext()) {
+                key = keyIterator.next();
+                container.add(key.getCount(), table.classifyIdentification(key.getIdentification()));
+            }
+
+            // TODO normalization?
+
+            accumulateStatistics(container);
+            keyId = saveKeyGroupWithStatistics(batchKeys, container, keyId, batchId++);
+        }
+    }
+
+    private void setupDatasetOutput() throws IOException {
+        resultTemplate = new Template("fullClassificationContainerResult.csv");
+        datasetWriter = new ExtendedWriter(pathToFolderWithResults + "dataset.json");
+        // TODO close datasetWriter
+    }
+
+    private long saveKeyGroupWithStatistics(Set<ClassificationKey> batchKeys, ClassificationContainer container, long startingKeyId, long batchId) {
+        for (ClassificationKey key : batchKeys) {
+            try {
+                String values = "";
+                for (String groupName : table.getGroupsNames()) {
+                    BigDecimal val = container.getRow().getSource(groupName);
+                    values += (values.length() > 0 ? "," : "");
+                    if (val != null) { values += val.doubleValue(); } else { values += "0"; }
+                }
+
+                String vectors = table.generationIdentification(key);
+
+                JSONArray sourceArray = new JSONArray();
+                if (key.getSource() != null) sourceArray.addAll(key.getSource());
+                String source = sourceArray.toJSONString();
+
+                resultTemplate.resetVariables();
+                //resultTemplate.setVariable("p", key.getRsaKey().getP().toString(16)); // TODO
+                //resultTemplate.setVariable("q", key.getRsaKey().getQ().toString(16));
+                resultTemplate.setVariable("n", key.getRsaKey().getModulus().toString(16));
+                //resultTemplate.setVariable("ordered", Boolean.valueOf(key.isOrdered()).toString());
+                resultTemplate.setVariable("occurrence", Long.valueOf(key.getCount()).toString());
+                resultTemplate.setVariable("source", source);
+                //resultTemplate.setVariable("info", key.getInfo().toString());
+                resultTemplate.setVariable("batch", Long.valueOf(batchId).toString());
+                resultTemplate.setVariable("vector", vectors);
+                resultTemplate.setVariable("probabilities", values);
+                datasetWriter.write(resultTemplate.generateString());
+            } catch (IOException ex) {
+                System.err.println("Error while writing dataset to file.");
+            }
+        }
+
+        return ++startingKeyId;
+    }
+
+    private void setupStatistics() {
+        // Create containers for statistics
+        outputsAll = new HashMap<>();
+        groupsCount = new HashMap<>();
+        groupsCountUnique = new HashMap<>();
+        groupsPositiveCountAll = new HashMap<>();
+        groupsPositiveCountUniqueAll = new HashMap<>();
+        groupsNegativeCountAll = new HashMap<>();
+        groupsNegativeCountUniqueAll = new HashMap<>();
+        minMaxKeys = new ArrayList<>();
+
+        //Initialize containers
+        for (int i = 0; i < minKeys.length; i++) {
+            Long minKey = minKeys[i], maxKey = null;
+            if (i < minKeys.length - 1) maxKey = minKeys[i + 1];
+            minMaxKeys.add(new Pair<>(minKey, maxKey));
+
+            groupsCount.put(minKey, 0L);
+            groupsCountUnique.put(minKey, 0L);
+
+            Map<String, BigDecimal> groupsPositiveCount = new TreeMap<>();
+            Map<String, BigDecimal> groupsPositiveCountUnique = new TreeMap<>();
+            Map<String, Long> groupsNegativeCount = new TreeMap<>();
+            Map<String, Long> groupsNegativeCountUnique = new TreeMap<>();
+            for (String groupName : table.getGroupsNames()) {
+                groupsPositiveCount.put(groupName, BigDecimal.ZERO);
+                groupsPositiveCountUnique.put(groupName, BigDecimal.ZERO);
+                groupsNegativeCount.put(groupName, 0L);
+                groupsNegativeCountUnique.put(groupName, 0L);
+            }
+            groupsPositiveCountAll.put(minKey, groupsPositiveCount);
+            groupsPositiveCountUniqueAll.put(minKey, groupsPositiveCountUnique);
+            groupsNegativeCountAll.put(minKey, groupsNegativeCount);
+            groupsNegativeCountUniqueAll.put(minKey, groupsNegativeCountUnique);
+        }
+    }
+
+    private void accumulateStatistics(ClassificationContainer container) {
+        //Compute statistics and save results of each classification container
+
+        long allKeys = container.getNumOfKeys();
+        long uniqueKeys = container.getNumOfRows();
+
+        for (Pair<Long, Long> minMaxKey : minMaxKeys) {
+            Long minKey = minMaxKey.getKey(), maxKey = minMaxKey.getValue();
+
+            if (container.getNumOfRows() < minKey) continue;
+            if (maxKey != null) {
+                if (container.getNumOfRows() >= maxKey) continue;
+            }
+
+            groupsCount.put(minKey, groupsCount.get(minKey) + container.getNumOfKeys());
+            groupsCountUnique.put(minKey, groupsCountUnique.get(minKey) + container.getNumOfRows());
+
+            Map<String, BigDecimal> groupsPositiveCount = groupsPositiveCountAll.get(minKey);
+            Map<String, BigDecimal> groupsPositiveCountUnique = groupsPositiveCountUniqueAll.get(minKey);
+            Map<String, Long> groupsNegativeCount = groupsNegativeCountAll.get(minKey);
+            Map<String, Long> groupsNegativeCountUnique = groupsNegativeCountUniqueAll.get(minKey);
+
+            for (String groupName : table.getGroupsNames()) {
+                BigDecimal val = container.getRow().getSource(groupName);
+                if (val != null) {
+                    groupsPositiveCount.put(groupName, groupsPositiveCount.get(groupName).add(val.multiply(BigDecimal.valueOf(allKeys))));
+                    groupsPositiveCountUnique.put(groupName, groupsPositiveCountUnique.get(groupName).add(val.multiply(BigDecimal.valueOf(uniqueKeys))));
+                } else {
+                    groupsNegativeCount.put(groupName, groupsNegativeCount.get(groupName) + allKeys);
+                    groupsNegativeCountUnique.put(groupName, groupsNegativeCountUnique.get(groupName) + uniqueKeys);
+                }
+            }
+        }
+    }
+
+    private void saveStatistics() {
+        //Save results of classification
+        Template classificationResult;
+        try {
+            classificationResult = new Template("classificationResult.csv");
+        }
+        catch (IOException ex) {
+            System.err.println("Error while creating template from file 'classificationResult.csv': " + ex.getMessage());
+            return;
+        }
+        for (Pair<Long, Long> minMaxKey : minMaxKeys) {
+            Long minKey = minMaxKey.getKey(), maxKey = minMaxKey.getValue();
+            try {
+                ExtendedWriter writer = outputsAll.get(minKey);
+                if (writer != null) writer.close();
+            } catch (IOException ex) {
+                System.err.println("Error while closing file for results.");
+            }
+
+            String file = "results, " + minKey + (maxKey != null ? " - " + String.valueOf(maxKey-1) : " and more") + " keys.csv";
+            try (ExtendedWriter writer = new ExtendedWriter(pathToFolderWithResults + file)) {
+                Pair<String, String> positiveResults = positiveVectorToCsv(groupsPositiveCountAll.get(minKey), groupsCount.get(minKey));
+                Pair<String, String> positiveUniqueResults = positiveVectorToCsv(groupsPositiveCountUniqueAll.get(minKey), groupsCountUnique.get(minKey));
+                Pair<String, String> negativeResults = negativeVectorToCsv(groupsNegativeCountAll.get(minKey));
+                Pair<String, String> negativeUniqueResults = negativeVectorToCsv(groupsNegativeCountUniqueAll.get(minKey));
+
+                classificationResult.resetVariables();
+                classificationResult.setVariable("keys", groupsCount.get(minKey).toString());
+                classificationResult.setVariable("uniqueKeys", groupsCountUnique.get(minKey).toString());
+
+                classificationResult.setVariable("positiveGroups", positiveResults.getKey());
+                classificationResult.setVariable("positiveValues", positiveResults.getValue());
+                classificationResult.setVariable("positiveUniqueGroups", positiveUniqueResults.getKey());
+                classificationResult.setVariable("positiveUniqueValues", positiveUniqueResults.getValue());
+                classificationResult.setVariable("negativeGroups", negativeResults.getKey());
+                classificationResult.setVariable("negativeValues", negativeResults.getValue());
+                classificationResult.setVariable("negativeUniqueGroups", negativeUniqueResults.getKey());
+                classificationResult.setVariable("negativeUniqueValues", negativeUniqueResults.getValue());
+                writer.write(classificationResult.generateString());
+            } catch (IOException ex) {
+                System.err.println("Error while writing result to file '" + file + ".csv'.");
+            }
+        }
+    }
+
     public void classify(boolean batchBySharedPrimes) {
+        readDatasetAndComputeMasks(true); // TODO
+
+        computePriorProbability();
+
+        if (batchBySharedPrimes) {
+            batchKeysByProperty(new PrimePropertyExtractor());
+        } else {
+            batchKeysByProperty(new SourcePropertyExtractor());
+        }
+
+        try {
+            classify();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        saveStatistics();
+
+    }
+
+    public void deprecatedClassify(boolean batchBySharedPrimes) {
         Map<Set<String>, ClassificationContainer> parsedData = new HashMap<>();
         List<ClassificationContainer> keysWithoutSource = new ArrayList<>();
         // Private keys obtained by factorization should share some primes.
@@ -280,9 +666,7 @@ public class DataSetClassification {
                         if (val != null) { values += val.doubleValue(); } else { values += "0"; }
                     }
 
-                    JSONArray vectorsArray = new JSONArray();
-                    vectorsArray.addAll(table.generationIdentification(key));
-                    String vectors = vectorsArray.toJSONString();
+                    String vectors = table.generationIdentification(key);
 
                     JSONArray sourceArray = new JSONArray();
                     if (key.getSource() != null) sourceArray.addAll(key.getSource());
@@ -369,13 +753,7 @@ public class DataSetClassification {
                         System.err.println("Warning: the number of attribute values does not match the number of keys");
                     }
 
-                    Set<String> vectorList = table.generationIdentification(key);
-                    String vectors = "";
-                    for (Iterator<String> iterator = vectorList.iterator(); iterator.hasNext(); ) {
-                        vectors = vectors.concat(iterator.next());
-                        if (iterator.hasNext()) vectors = vectors.concat(",");
-                    }
-
+                    String vectors = table.generationIdentification(key);
 
                     StringBuilder probableGroups = new StringBuilder();
                     StringBuilder possibleGroups = new StringBuilder();

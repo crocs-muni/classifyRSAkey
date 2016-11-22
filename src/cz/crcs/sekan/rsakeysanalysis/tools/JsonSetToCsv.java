@@ -28,8 +28,7 @@ public class JsonSetToCsv {
                 while ((jsonLine = reader.readLine()) != null) {
                     ClassificationKey key = ClassificationKey.fromJson(jsonLine);
 
-                    Set<String> vectors = classificationTable.generationIdentification(key);
-                    String vector = vectors.iterator().next();
+                    String vector = classificationTable.generationIdentification(key);
                     writer.write(vector + "," + key.toStringByTemplate(template));
 
                     line++;

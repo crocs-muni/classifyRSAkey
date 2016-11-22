@@ -10,6 +10,7 @@ import org.json.simple.parser.ParseException;
 
 import java.math.BigInteger;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * @author Peter Sekan, peter.sekan@mail.muni.cz
@@ -40,6 +41,16 @@ public class ClassificationKey {
      * Other information about key which will be not used during classification
      */
     private JSONObject info = null;
+
+    private String identification;
+
+    public String getIdentification() {
+        return identification;
+    }
+
+    public void setIdentification(String identification) {
+        this.identification = identification;
+    }
 
     /**
      * Factors of p-1, p+1, q-1, q+1
@@ -87,13 +98,13 @@ public class ClassificationKey {
         if (object.containsKey("ordered")) key.ordered = (Boolean)object.get("ordered");
         if (object.containsKey("count")) key.count = ((Number)object.get("count")).intValue();
         if (object.containsKey("source")) {
-            key.source = new HashSet<>();
+            key.source = new CopyOnWriteArraySet<>();
             JSONArray array = (JSONArray)object.get("source");
             for (Object sourcePart : array) {
                 key.source.add((String)sourcePart);
             }
         }
-        if (object.containsKey("info")) key.info = (JSONObject)object.get("info");
+        // TODO if (object.containsKey("info")) key.info = (JSONObject)object.get("info");
         if (object.containsKey("p-1 factors")) key.pmoFactors = parseArrayOfFactors((JSONArray)object.get("p-1 factors"));
         if (object.containsKey("p+1 factors")) key.ppoFactors = parseArrayOfFactors((JSONArray)object.get("p+1 factors"));
         if (object.containsKey("q-1 factors")) key.qmoFactors = parseArrayOfFactors((JSONArray)object.get("q-1 factors"));
@@ -118,7 +129,7 @@ public class ClassificationKey {
         //Property count is not necessary, represent number of duplicities in source key set
         Number countNumber = 1;
         if (obj.containsKey("count")) countNumber = (Number) obj.get("count");
-        long count = countNumber.longValue();
+        int count = countNumber.intValue();
 
         //Property validity has to have property start with date
         //If date has W3C date and time format or similar, only date is extracted
@@ -145,14 +156,16 @@ public class ClassificationKey {
         if (!subject.containsKey(subjectId)) throw new WrongKeyException("Key does not contain subject.");
         String subjectIdValue = subject.get(subjectId).toString();
 
-        key.source = new HashSet<>();
+        key.source = new CopyOnWriteArraySet<>();
         key.source.add(subjectIdValue);
         key.source.add(validityStartByDay);
+
+        key.count = count;
 
         //Create public key object
         key.rsaKey = new RSAKey(modulus, exponent);
 
-        key.info = obj;
+        // TODO key.info = obj;
 
         return key;
     }
@@ -176,7 +189,7 @@ public class ClassificationKey {
     private ClassificationKey(ClassificationKey otherKey) {
         this.rsaKey = otherKey.rsaKey;
         if (otherKey.source != null) {
-            this.source = new HashSet<>();
+            this.source = new CopyOnWriteArraySet<>();
             this.source.addAll(otherKey.source);
         }
         this.ordered = otherKey.ordered;
@@ -274,7 +287,7 @@ public class ClassificationKey {
             key.setInfo(infoA);
         }
         if (key.getSource() != null || this.getSource() != null) {
-            Set<String> sources = new HashSet<>();
+            Set<String> sources = new CopyOnWriteArraySet<>();
             if (this.getSource() != null) sources.addAll(this.getSource());
             if (key.getSource() != null) sources.addAll(key.getSource());
             key.setSource(sources);
