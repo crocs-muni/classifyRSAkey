@@ -1,5 +1,8 @@
 package cz.crcs.sekan.rsakeysanalysis.classification.table;
 
+import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori.PriorProbability;
+import org.json.simple.JSONObject;
+
 import java.math.BigDecimal;
 import java.util.*;
 
@@ -176,6 +179,14 @@ public class ClassificationRow {
         return tmp;
     }
 
+    public JSONObject toJSON() {
+        JSONObject row = new JSONObject();
+        for (Map.Entry<String, BigDecimal> entry : sources.entrySet()) {
+            row.put(entry.getKey(), entry.getValue());
+        }
+        return row;
+    }
+
     /**
      * Normalize values to interval [0,1] and sum of all values set to 1.
      */
@@ -188,5 +199,24 @@ public class ClassificationRow {
         for (Map.Entry<String, BigDecimal> entry : sources.entrySet()) {
             entry.setValue((entry.getValue().divide(sum, 20, BigDecimal.ROUND_CEILING)));
         }
+    }
+
+    public void applyPriorProbabilities(PriorProbability priorProbability) {
+        if (!priorProbability.keySet().containsAll(sources.keySet())) {
+            throw new IllegalArgumentException("Not all probabilities are defined");
+        }
+        for (String group : sources.keySet()) {
+            sources.replace(group, sources.get(group).multiply(priorProbability.get(group)));
+        }
+        normalize();
+    }
+
+    public ClassificationRow deepCopy() {
+        ClassificationRow copy = new ClassificationRow();
+        copy.sources = new TreeMap<>();
+        for (Map.Entry<String, BigDecimal> entry : sources.entrySet()) {
+            copy.sources.put(entry.getKey(), entry.getValue());
+        }
+        return copy;
     }
 }

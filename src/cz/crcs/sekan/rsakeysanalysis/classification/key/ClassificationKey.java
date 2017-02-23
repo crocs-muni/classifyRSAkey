@@ -78,9 +78,7 @@ public class ClassificationKey {
     }
 
     private static boolean isNewJsonFormat(String json) throws ParseException {
-        JSONParser parser = new JSONParser();
-        JSONObject object = (JSONObject)parser.parse(json);
-        return !(!object.containsKey("n") && (!object.containsKey("p") || !object.containsKey("q")));
+        return !json.contains("\"modulus\"");
     }
 
     public static ClassificationKey fromNewJsonFormat(String json) throws ParseException, WrongKeyException {
@@ -104,7 +102,7 @@ public class ClassificationKey {
                 key.source.add((String)sourcePart);
             }
         }
-        // TODO if (object.containsKey("info")) key.info = (JSONObject)object.get("info");
+        if (object.containsKey("info")) key.info = (JSONObject)object.get("info");
         if (object.containsKey("p-1 factors")) key.pmoFactors = parseArrayOfFactors((JSONArray)object.get("p-1 factors"));
         if (object.containsKey("p+1 factors")) key.ppoFactors = parseArrayOfFactors((JSONArray)object.get("p+1 factors"));
         if (object.containsKey("q-1 factors")) key.qmoFactors = parseArrayOfFactors((JSONArray)object.get("q-1 factors"));
@@ -120,20 +118,16 @@ public class ClassificationKey {
         String subjectId = "common_name";
         //Check if certificate has a valid json format (rsa_public_key, subject and validity property is needed)
         JSONObject obj = (JSONObject) parser.parse(json);
-        if (!obj.containsKey("rsa_public_key") ||
-                !obj.containsKey("subject") ||
-                !obj.containsKey("validity"))
-            throw new WrongKeyException("Key does not contain rsa_public_key or subject or validity.");
 
         //Read all needed information about certificate
         //Property count is not necessary, represent number of duplicities in source key set
-        Number countNumber = 1;
-        if (obj.containsKey("count")) countNumber = (Number) obj.get("count");
+        Number countNumber = (Number) obj.getOrDefault("count", 1);
         int count = countNumber.intValue();
 
         //Property validity has to have property start with date
         //If date has W3C date and time format or similar, only date is extracted
-        JSONObject validity = (JSONObject) obj.get("validity");
+        JSONObject validity = (JSONObject) obj.getOrDefault("validity", null);
+        if (validity == null) throw new WrongKeyException("Key does not contain validity");
         String validityStart = (String) validity.get("start");
         String validityStartByDay = validityStart;
         if (validityStart.contains("T")) {
@@ -141,9 +135,10 @@ public class ClassificationKey {
         }
 
         //Property rsa_public_key has to have properties modulus and exponent
-        JSONObject rsa_public_key = (JSONObject) obj.get("rsa_public_key");
-        String modulus = (String) rsa_public_key.get("modulus");
-        Object exponentObject = rsa_public_key.get("exponent");
+        JSONObject rsaPublicKey = (JSONObject) obj.getOrDefault("rsa_public_key", null);
+        if (rsaPublicKey == null) throw new WrongKeyException("Key does not contain rsa_public_key");
+        String modulus = (String) rsaPublicKey.getOrDefault("modulus", null);
+        Object exponentObject = rsaPublicKey.getOrDefault("exponent", null);
         BigInteger exponent;
         try {
             exponent = BigInteger.valueOf(((Number) exponentObject).longValue());
@@ -152,8 +147,8 @@ public class ClassificationKey {
         }
 
         //Property subject has to have property common_name
-        JSONObject subject = (JSONObject) obj.get("subject");
-        if (!subject.containsKey(subjectId)) throw new WrongKeyException("Key does not contain subject.");
+        JSONObject subject = (JSONObject) obj.getOrDefault("subject", null);
+        if (subject == null || !subject.containsKey(subjectId)) throw new WrongKeyException("Key does not contain subject.");
         String subjectIdValue = subject.get(subjectId).toString();
 
         key.source = new CopyOnWriteArraySet<>();
@@ -165,7 +160,7 @@ public class ClassificationKey {
         //Create public key object
         key.rsaKey = new RSAKey(modulus, exponent);
 
-        // TODO key.info = obj;
+        key.info = obj;
 
         return key;
     }
@@ -334,7 +329,7 @@ public class ClassificationKey {
         if (rsaKey.getExponent() != null) object.put("e", BigIntegerConversion.toString(rsaKey.getExponent()));
         if (rsaKey.getP() != null) object.put("p", BigIntegerConversion.toString(rsaKey.getP()));
         if (rsaKey.getQ() != null) object.put("q", BigIntegerConversion.toString(rsaKey.getQ()));
-        object.put("ordered", ordered);
+        if (rsaKey.getP() != null && rsaKey.getQ() != null) object.put("ordered", ordered);
         object.put("count", count);
         if (source != null) {
             JSONArray array = new JSONArray();
@@ -346,6 +341,7 @@ public class ClassificationKey {
         if (ppoFactors != null) object.put("p+1 factors", factorsToJSONArray(ppoFactors));
         if (qmoFactors != null) object.put("q-1 factors", factorsToJSONArray(qmoFactors));
         if (qpoFactors != null) object.put("q+1 factors", factorsToJSONArray(qpoFactors));
+        if (identification != null) object.put("mask", identification);
         return object;
     }
 

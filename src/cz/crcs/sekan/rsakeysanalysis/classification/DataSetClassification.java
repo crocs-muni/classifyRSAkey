@@ -1,10 +1,12 @@
 package cz.crcs.sekan.rsakeysanalysis.classification;
 
+import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.BatchHolder;
 import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKey;
-import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationContainer;
-import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationRow;
-import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationTable;
-import cz.crcs.sekan.rsakeysanalysis.classification.table.PrimeMatchingContainer;
+import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKeyStub;
+import cz.crcs.sekan.rsakeysanalysis.classification.key.property.PrimePropertyExtractor;
+import cz.crcs.sekan.rsakeysanalysis.classification.key.property.PropertyExtractor;
+import cz.crcs.sekan.rsakeysanalysis.classification.key.property.SourcePropertyExtractor;
+import cz.crcs.sekan.rsakeysanalysis.classification.table.*;
 import cz.crcs.sekan.rsakeysanalysis.classification.tests.ModulusFactors;
 import cz.crcs.sekan.rsakeysanalysis.common.ExtendedWriter;
 import cz.crcs.sekan.rsakeysanalysis.template.Template;
@@ -26,6 +28,7 @@ import java.util.*;
  * @author Peter Sekan, peter.sekan@mail.muni.cz
  * @version 03/10/2016
  */
+@Deprecated
 public class DataSetClassification {
     private ClassificationTable table;
     private String pathToDataSet;
@@ -64,6 +67,58 @@ public class DataSetClassification {
 
     private Template resultTemplate;
     private ExtendedWriter datasetWriter;
+
+    //private BatchHolder batchHolder;
+    private Map<Long, ClassificationKeyStub> keyIdToKeyStub;
+    private Map<Long, ClassificationContainer> batchIdToContainer;
+
+    public void fakeClassify() {
+        keyIdToKeyStub = new TreeMap<>();
+        batchIdToContainer = new TreeMap<>();
+
+        BatchHolder<Set<String>> batchHolder = new BatchHolder<>(new SourcePropertyExtractor());
+        try (BufferedReader reader = new BufferedReader(new FileReader(pathToDataSet))) {
+            String jsonLine;
+            long lineNumber = 0;
+            while ((jsonLine = reader.readLine()) != null) {
+                lineNumber++;
+                // Count the lines and each 100000 print the current line
+                if (lineNumber % 100000 == 0) System.out.println("Parsed " + lineNumber + " lines.");
+
+                // Skip blank lines
+                if (jsonLine.length() == 0) continue;
+
+                try {
+                    ClassificationKey key = ClassificationKey.fromJson(jsonLine);
+                    keyIdToKeyStub.put(batchHolder.registerKey(key), ClassificationKeyStub.fromClassificationKey(key, table));
+                } catch (Exception ex) {
+                    System.err.println("Error: cannot parse line " + lineNumber + ": " + ex.getMessage());
+                    System.err.println("Json line: " + jsonLine);
+                }
+            }
+        } catch (IOException ex) {
+            System.err.println("Error while reading file '" + pathToDataSet + "'.");
+        }
+
+        List<Long> batchIds = batchHolder.getBatchIdsForKeyWithProperty();
+        for (Long batchId : batchIds) {
+            List<Long> keyIds = batchHolder.getKeyIdsByBatchId(batchId);
+            Iterator<Long> keyIterator = keyIds.iterator();
+            Long keyId = keyIterator.next();
+            ClassificationKeyStub stub = keyIdToKeyStub.get(keyId);
+            ClassificationContainer container = new ClassificationContainer(stub.getDuplicityCount(), table.classifyIdentification(stub.getMask()));
+
+            while (keyIterator.hasNext()) {
+                stub = keyIdToKeyStub.get(keyIterator.next());
+                container.add(stub.getDuplicityCount(), table.classifyIdentification(stub.getMask()));
+            }
+
+            batchIdToContainer.put(batchId, container);
+        }
+
+        // reconstruct dataset -- modulus to keyId to batchId to ClassificationContainer
+        // classification mask either from keyId to KeyStub, or compute again from table
+    }
 
     public DataSetClassification(ClassificationTable table, String pathToDataSet, String pathToFolderWithResults) {
         if (table == null) throw new IllegalArgumentException("Table in DataSetClassification constructor cannot be null.");
@@ -164,29 +219,6 @@ public class DataSetClassification {
         BigDecimal uniformProbability = BigDecimal.ONE;
         for (String groupName : table.getGroupsNames()) {
             priorProbabilityForGroups.put(groupName, uniformProbability);
-        }
-    }
-
-    private interface PropertyExtractor<Property> {
-        public List<Property> extractProperty(ClassificationKey key);
-    }
-
-    private class SourcePropertyExtractor implements PropertyExtractor<Set<String>> {
-        @Override
-        public List<Set<String>> extractProperty(ClassificationKey key) {
-            List<Set<String>> sourceSetList = new ArrayList<>(1);
-            sourceSetList.add(key.getSource());
-            return sourceSetList;
-        }
-    }
-
-    private class PrimePropertyExtractor implements PropertyExtractor<BigInteger> {
-        @Override
-        public List<BigInteger> extractProperty(ClassificationKey key) {
-            List<BigInteger> primes = new ArrayList<>(2);
-            primes.add(key.getRsaKey().getP());
-            primes.add(key.getRsaKey().getQ());
-            return primes;
         }
     }
 
@@ -629,11 +661,6 @@ public class DataSetClassification {
             }
             groupsArray.addAll(groups);
             groupsArray.writeJSONString(datasetWriter);
-
-            if (table.getRawTable() != null) {
-                datasetWriter.write(", \"table\":");
-                table.getRawTable().toJSONObject().writeJSONString(datasetWriter);
-            }
             datasetWriter.writeln("}"); // end of array for groups
 
         } catch (IOException e) {

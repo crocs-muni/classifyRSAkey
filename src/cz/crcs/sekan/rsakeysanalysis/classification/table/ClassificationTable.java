@@ -1,8 +1,10 @@
 package cz.crcs.sekan.rsakeysanalysis.classification.table;
 
+import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori.PriorProbability;
 import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKey;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.identification.IdentificationGenerator;
 import cz.crcs.sekan.rsakeysanalysis.common.ExtendedWriter;
+import javafx.util.Pair;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -16,10 +18,9 @@ import java.util.*;
 public class ClassificationTable {
     private Map<String, ClassificationRow> table = new TreeMap<>();
     private Map<String, Set<String>> groups = new TreeMap<>();
-    private Map<String, BigDecimal> priorProbability = new TreeMap<>();
+    private PriorProbability priorProbability = new PriorProbability();
 
     private IdentificationGenerator identificationGenerator;
-    private RawTable rawTable = null;
 
     public ClassificationTable(Map<Set<String>, Map<String, Long>> tableGrouped, IdentificationGenerator identificationGenerator, Map<Set<String>, BigDecimal> groupWeights) {
         this.identificationGenerator = identificationGenerator;
@@ -51,12 +52,28 @@ public class ClassificationTable {
             for (String groupName : groups.keySet()) {
                 Double val = normalized.get(groupName).get(identification);
                 if (val != null) {
-                    row.put(groupName, BigDecimal.valueOf(val).multiply(priorProbability.get(groupName)));
+                    row.put(groupName, BigDecimal.valueOf(val));
                 }
             }
             ClassificationRow classificationRow = new ClassificationRow(row);
             table.put(identification, classificationRow);
         }
+    }
+
+    public void applyPriorProbability(PriorProbability priorProbability) {
+        if (priorProbability != null) {
+            // use the default user defined prior probabilities from the table, otherwise replace
+            this.priorProbability = priorProbability;
+        }
+
+        for (String identification : table.keySet()) {
+            ClassificationRow row = table.get(identification);
+            row.applyPriorProbabilities(this.priorProbability);
+        }
+    }
+
+    public PriorProbability getPriorProbability() {
+        return priorProbability;
     }
 
     public ClassificationRow classifyKey(ClassificationKey key) {
@@ -130,11 +147,21 @@ public class ClassificationTable {
         }
     }
 
-    public RawTable getRawTable() {
-        return rawTable;
+    private ClassificationTable() {
+
     }
 
-    public void setRawTable(RawTable rawTable) {
-        this.rawTable = rawTable;
+    public ClassificationTable makeCopy() {
+        // normalizations are tricky, make deep copy of the classification rows, other stuff should not change
+        Map<String, ClassificationRow> newTable = new HashMap<>();
+        for (Map.Entry<String, ClassificationRow> entry : table.entrySet()) {
+            newTable.put(entry.getKey(), entry.getValue().deepCopy());
+        }
+        ClassificationTable copyTable = new ClassificationTable();
+        copyTable.table = newTable;
+        copyTable.groups = groups;
+        copyTable.identificationGenerator = identificationGenerator;
+        copyTable.priorProbability = priorProbability;
+        return copyTable;
     }
 }

@@ -1,6 +1,7 @@
 package cz.crcs.sekan.rsakeysanalysis.classification.table;
 
 import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKey;
+import org.json.simple.JSONObject;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -64,5 +65,13 @@ public class ClassificationContainer {
 
     public List<ClassificationKey> getKeys() {
         return keys;
+    }
+
+    public JSONObject toJSON() {
+        JSONObject jsonObject = new JSONObject();
+        jsonObject.put("keyCount", getNumOfKeys());
+        jsonObject.put("uniqueKeyCount", getNumOfRows());
+        jsonObject.put("classification", row.toJSON());
+        return jsonObject;
     }
 }
