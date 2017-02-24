@@ -18,7 +18,6 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.TreeMap;
 
 /**
@@ -77,7 +76,7 @@ public class Misclassification {
                     if (container == null) container = new ClassificationContainer(1, row);
                     else container.add(1, row);
 
-                    if (container.getNumOfRows() == keys) {
+                    if (container.getNumOfUniqueKeys() == keys) {
                         if (resultRow == null) resultRow = row;
                         else resultRow = resultRow.computeWithNotSameSource(row);
                         container = null;
@@ -108,7 +107,7 @@ public class Misclassification {
                     if (container == null) container = new ClassificationContainer(1, row);
                     else container.add(1, row);
 
-                    if (container.getNumOfRows() == keys) {
+                    if (container.getNumOfUniqueKeys() == keys) {
                         String top = container.getRow().getTopGroups(1).iterator().next();
                         groupResult.putIfAbsent(top, 0L);
                         groupResult.put(top, groupResult.get(top) + 1);

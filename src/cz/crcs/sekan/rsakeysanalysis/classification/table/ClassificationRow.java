@@ -4,9 +4,13 @@ import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori.PriorProba
 import org.json.simple.JSONObject;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.text.DecimalFormat;
 import java.util.*;
 
 /**
+ * TODO use Group ID to Group name mapping and lists/arrays
+ *
  * @author Peter Sekan, peter.sekan@mail.muni.cz
  * @version 07.02.2016
  */
@@ -14,6 +18,12 @@ public class ClassificationRow {
     private Map<String, BigDecimal> sources = new TreeMap<>();
 
     private ClassificationRow() {}
+
+    public ClassificationRow(String[] sources) {
+        for (String source : sources) {
+            this.sources.put(source, BigDecimal.ZERO);
+        }
+    }
 
     public ClassificationRow(String[] sources, String[] values) {
         if (sources.length != values.length) throw new IllegalArgumentException("Arguments sources and values in ClassificationRow constructor have not same size.");
@@ -142,6 +152,12 @@ public class ClassificationRow {
      * @return new computed classification row
      */
     public ClassificationRow computeWithNotSameSource(ClassificationRow otherRow) {
+        ClassificationRow result = sumRowsNoNormalize(otherRow);
+        result.normalize();
+        return result;
+    }
+
+    public ClassificationRow sumRowsNoNormalize(ClassificationRow otherRow) {
         ClassificationRow result = new ClassificationRow();
         Set<String> allSources = new HashSet<>();
         allSources.addAll(sources.keySet());
@@ -162,8 +178,53 @@ public class ClassificationRow {
                 result.sources.put(source, val);
             }
         }
-        result.normalize();
         return result;
+    }
+
+    /**
+     * Turns positive results of classification into zeros and negative (zeros) into ones
+     * TODO Requires the map to have all sources! TODO refactor the class :(
+     * @return
+     */
+    public ClassificationRow switchToNegative(List<String> allGroups) {
+        Map<String, BigDecimal> resultSources = new TreeMap<>();
+        for (String group : allGroups) {
+            resultSources.put(group, BigDecimal.ZERO.equals(sources.getOrDefault(group, BigDecimal.ZERO)) ? BigDecimal.ONE : BigDecimal.ZERO);
+        }
+        return new ClassificationRow(resultSources);
+    }
+
+    public ClassificationRow sumRowsNegativeResults(ClassificationRow otherRow, List<String> allGroups) {
+        // assuming this has already been switched to negative
+        return otherRow.switchToNegative(allGroups).sumRowsNoNormalize(this);
+    }
+
+    public ClassificationRow multipleByConstant(Long constant) {
+        Map<String, BigDecimal> resultSources = new TreeMap<>();
+        for (String key : sources.keySet()) {
+            resultSources.put(key, sources.get(key).multiply(BigDecimal.valueOf(constant)));
+        }
+        return new ClassificationRow(resultSources);
+    }
+
+    public static String groupNamesToFormattedString(List<String> groupNamesOrdered, String separator) {
+        StringBuilder builder = new StringBuilder();
+        int toLast = groupNamesOrdered.size();
+        for (String groupName : groupNamesOrdered) {
+            builder.append(groupName);
+            if (--toLast != 0) builder.append(separator);
+        }
+        return builder.toString();
+    }
+
+    public String toFormattedString(List<String> groupNamesOrdered, DecimalFormat formatter, String separator) {
+        StringBuilder builder = new StringBuilder();
+        int toLast = groupNamesOrdered.size();
+        for (String groupName : groupNamesOrdered) {
+            builder.append(formatter.format(sources.get(groupName)));
+            if (--toLast != 0) builder.append(separator);
+        }
+        return builder.toString();
     }
 
     public String toString() {
@@ -199,6 +260,21 @@ public class ClassificationRow {
         for (Map.Entry<String, BigDecimal> entry : sources.entrySet()) {
             entry.setValue((entry.getValue().divide(sum, 20, BigDecimal.ROUND_CEILING)));
         }
+    }
+
+    public ClassificationRow normalizedCopy() {
+        ClassificationRow copy = deepCopy();
+
+        BigDecimal sum = BigDecimal.ZERO;
+        for (BigDecimal val : sources.values()) {
+            sum = sum.add(val);
+        }
+        if (!BigDecimal.ZERO.equals(sum)) {
+            for (Map.Entry<String, BigDecimal> entry : copy.sources.entrySet()) {
+                entry.setValue((entry.getValue().divide(sum, 20, BigDecimal.ROUND_CEILING)));
+            }
+        }
+        return copy;
     }
 
     public void applyPriorProbabilities(PriorProbability priorProbability) {

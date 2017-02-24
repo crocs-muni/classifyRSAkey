@@ -1,38 +1,34 @@
 package cz.crcs.sekan.rsakeysanalysis.classification.table;
 
-import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKey;
 import org.json.simple.JSONObject;
-
-import java.util.LinkedList;
-import java.util.List;
 
 /**
  * @author Peter Sekan, peter.sekan@mail.muni.cz
  * @version 15.02.2016
  */
 public class ClassificationContainer {
-    private long numOfRows = 0;
-    private long numOfKeys = 0;
+    private long numOfUniqueKeys = 0;
+    private long numOfAllKeys = 0;
     private ClassificationRow row;
 
     public ClassificationContainer(long numOfDuplicityKeys, ClassificationRow row) {
-        numOfRows = 1;
-        numOfKeys = numOfDuplicityKeys;
+        numOfUniqueKeys = 1;
+        numOfAllKeys = numOfDuplicityKeys;
         this.row = row;
     }
 
     public void add(long numOfDuplicityKeys, ClassificationRow row) {
-        numOfRows++;
-        numOfKeys += numOfDuplicityKeys;
+        numOfUniqueKeys++;
+        numOfAllKeys += numOfDuplicityKeys;
         this.row = this.row.computeWithSameSource(row);
     }
 
-    public long getNumOfRows() {
-        return numOfRows;
+    public long getNumOfUniqueKeys() {
+        return numOfUniqueKeys;
     }
 
-    public long getNumOfKeys() {
-        return numOfKeys;
+    public long getNumOfAllKeys() {
+        return numOfAllKeys;
     }
 
     public ClassificationRow getRow() {
@@ -41,8 +37,8 @@ public class ClassificationContainer {
 
     public JSONObject toJSON() {
         JSONObject jsonObject = new JSONObject();
-        jsonObject.put("keyCount", getNumOfKeys());
-        jsonObject.put("uniqueKeyCount", getNumOfRows());
+        jsonObject.put("keyCount", getNumOfAllKeys());
+        jsonObject.put("uniqueKeyCount", getNumOfUniqueKeys());
         jsonObject.put("classification", row.toJSON());
         return jsonObject;
     }

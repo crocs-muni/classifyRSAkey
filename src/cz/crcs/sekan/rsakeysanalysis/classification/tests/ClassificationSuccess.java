@@ -11,7 +11,6 @@ import javafx.util.Pair;
 import org.json.simple.parser.ParseException;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.security.NoSuchAlgorithmException;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -65,7 +64,7 @@ public class ClassificationSuccess {
                                 container.add(1, row);
                             }
 
-                            if (container.getNumOfRows() == k) {
+                            if (container.getNumOfUniqueKeys() == k) {
                                 positions.add(container.getRow().getGroupPosition(group));
                                 if (rrow == null) {
                                     rrow = row;

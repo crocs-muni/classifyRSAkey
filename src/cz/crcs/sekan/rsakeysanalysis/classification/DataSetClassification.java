@@ -19,7 +19,6 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
@@ -402,19 +401,19 @@ public class DataSetClassification {
     private void accumulateStatistics(ClassificationContainer container) {
         //Compute statistics and save results of each classification container
 
-        long allKeys = container.getNumOfKeys();
-        long uniqueKeys = container.getNumOfRows();
+        long allKeys = container.getNumOfAllKeys();
+        long uniqueKeys = container.getNumOfUniqueKeys();
 
         for (Pair<Long, Long> minMaxKey : minMaxKeys) {
             Long minKey = minMaxKey.getKey(), maxKey = minMaxKey.getValue();
 
-            if (container.getNumOfRows() < minKey) continue;
+            if (container.getNumOfUniqueKeys() < minKey) continue;
             if (maxKey != null) {
-                if (container.getNumOfRows() >= maxKey) continue;
+                if (container.getNumOfUniqueKeys() >= maxKey) continue;
             }
 
-            groupsCount.put(minKey, groupsCount.get(minKey) + container.getNumOfKeys());
-            groupsCountUnique.put(minKey, groupsCountUnique.get(minKey) + container.getNumOfRows());
+            groupsCount.put(minKey, groupsCount.get(minKey) + container.getNumOfAllKeys());
+            groupsCountUnique.put(minKey, groupsCountUnique.get(minKey) + container.getNumOfUniqueKeys());
 
             Map<String, BigDecimal> groupsPositiveCount = groupsPositiveCountAll.get(minKey);
             Map<String, BigDecimal> groupsPositiveCountUnique = groupsPositiveCountUniqueAll.get(minKey);
