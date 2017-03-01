@@ -1,18 +1,30 @@
 package cz.crcs.sekan.rsakeysanalysis.classification.algorithm;
 
-import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori.PriorProbability;
-import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori.PriorProbabilityEstimator;
-import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.dataset.DataSetIterator;
-import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.dataset.DataSetSaver;
+import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori.*;
+import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.dataset.*;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.exception.DataSetException;
+import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.statistics.BatchesStatisticsAggregator;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.statistics.StatisticsAggregator;
 import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKey;
 import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKeyStub;
+import cz.crcs.sekan.rsakeysanalysis.classification.key.property.PrimePropertyExtractor;
 import cz.crcs.sekan.rsakeysanalysis.classification.key.property.PropertyExtractor;
+import cz.crcs.sekan.rsakeysanalysis.classification.key.property.SourcePropertyExtractor;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationContainer;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationRow;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationTable;
+import cz.crcs.sekan.rsakeysanalysis.classification.table.RawTable;
+import cz.crcs.sekan.rsakeysanalysis.classification.table.transformation.exception.TransformationNotFoundException;
+import cz.crcs.sekan.rsakeysanalysis.classification.table.transformation.exception.WrongTransformationFormatException;
+import cz.crcs.sekan.rsakeysanalysis.common.ExtendedWriter;
+import org.json.simple.parser.ParseException;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.lang.reflect.Array;
+import java.math.BigInteger;
 import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,6 +53,74 @@ public class Classification<BatchProperty> {
     private BatchHolder<BatchProperty> batchHolder;
 
     private Classification() {
+    }
+
+    public enum BatchType {
+        SOURCE("source"),
+        PRIMES("primes"),
+        NONE("none");
+
+        private final String name;
+
+        BatchType(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
+
+    public enum PriorType {
+        ESTIMATE("estimate"),
+        UNIFORM("uniform"),
+        TABLE("table");
+
+        private final String name;
+
+        PriorType(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
+
+    public enum ExportType {
+        NONE("none"),
+        JSON("json"),
+        CSV("csv");
+
+        private final String name;
+
+        ExportType(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
+    }
+
+    public enum MemoryType {
+        NONE("none"),
+        DISK("disk"),
+        MEMORY("memory");
+
+        private final String name;
+
+        MemoryType(String name) {
+            this.name = name;
+        }
+
+        @Override
+        public String toString() {
+            return name;
+        }
     }
 
 
@@ -88,6 +168,184 @@ public class Classification<BatchProperty> {
         }
     }
 
+    public static class BuildHelper {
+        public static final String BATCH_TYPE_SWITCH = "-b";
+        public static final String PRIOR_TYPE_SWITCH = "-p";
+        public static final String EXPORT_TYPE_SWITCH = "-e";
+        public static final String MEMORY_TYPE_SWITCH = "-t";
+
+        public static final String KEY_COUNT_SWITCH = "-c";
+        public static final String RNG_SEED_SWITCH = "-s";
+        public static final String PRIOR_PROBABILITY_SWITCH = "-a";
+
+        public static class Configuration {
+            public int consumedArguments;
+
+            // classification + success
+            public Classification.BatchType batchType = Classification.BatchType.SOURCE;
+            public Classification.PriorType priorType = Classification.PriorType.ESTIMATE;
+            public Classification.ExportType exportType = Classification.ExportType.NONE;
+            public Classification.MemoryType memoryType = Classification.MemoryType.DISK;
+            public ClassificationTable classificationTable;
+            public String outputFolderPath;
+
+            // success
+            public int keyCount;
+            public Long rngSeed;
+            public PriorProbability priorProbability;
+
+            public Configuration deepCopy() {
+                Configuration copy = new Configuration();
+                copy.consumedArguments = consumedArguments;
+                copy.batchType = batchType;
+                copy.priorType = priorType;
+                copy.exportType = exportType;
+                copy.memoryType = memoryType;
+                copy.outputFolderPath = outputFolderPath;
+                copy.keyCount = keyCount;
+                copy.rngSeed = rngSeed;
+                copy.classificationTable = classificationTable.makeCopy();
+                copy.priorProbability = priorProbability.makeCopy();
+                return copy;
+            }
+        }
+
+        public static Configuration fromCommandLineOptions(String[] args, int offset,
+                                                           String tableFilePath, String outputFolderPath)
+                throws IOException, ParseException, WrongTransformationFormatException, TransformationNotFoundException, DataSetException {
+
+            Configuration returnObject = new Configuration();
+
+            if ((args.length - offset) % 2 != 0) {
+                //throw new IllegalArgumentException("Bad number of arguments, some switch might be missing an option");
+            }
+
+            returnObject.consumedArguments = offset;
+
+            RawTable table = RawTable.load(tableFilePath);
+            returnObject.classificationTable = table.computeClassificationTable();
+
+            for (; returnObject.consumedArguments < args.length; returnObject.consumedArguments++) {
+                switch (args[returnObject.consumedArguments]) {
+                    case BATCH_TYPE_SWITCH:
+                        returnObject.batchType = Classification.BatchType.valueOf(args[++returnObject.consumedArguments].toUpperCase());
+                        break;
+                    case PRIOR_TYPE_SWITCH:
+                        returnObject.priorType = Classification.PriorType.valueOf(args[++returnObject.consumedArguments].toUpperCase());
+                        break;
+                    case EXPORT_TYPE_SWITCH:
+                        returnObject.exportType = Classification.ExportType.valueOf(args[++returnObject.consumedArguments].toUpperCase());
+                        break;
+                    case MEMORY_TYPE_SWITCH:
+                        returnObject.memoryType = Classification.MemoryType.valueOf(args[++returnObject.consumedArguments].toUpperCase());
+                        break;
+                    case KEY_COUNT_SWITCH:
+                        returnObject.keyCount = Integer.valueOf(args[++returnObject.consumedArguments]);
+                        break;
+                    case RNG_SEED_SWITCH:
+                        returnObject.rngSeed = Long.valueOf(args[++returnObject.consumedArguments]);
+                        break;
+                    case PRIOR_PROBABILITY_SWITCH:
+                        // TODO prior probability configuration the same as for classification
+                        returnObject.priorProbability = PriorProbability.uniformProbability(
+                                new ArrayList<>(returnObject.classificationTable.getGroupsNames()));
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Invalid option for classification: " + args[returnObject.consumedArguments]);
+                }
+            }
+
+            //Create folder for results if does not exist
+            File folderFile = new File(outputFolderPath);
+            if (!folderFile.exists()) {
+                if (!folderFile.mkdirs()) {
+                    throw new IllegalArgumentException("Cannot create folder.");
+                }
+            }
+
+            returnObject.outputFolderPath = outputFolderPath;
+            return returnObject;
+        }
+
+        public static Builder prepareBuilder(Configuration config, String datasetFilePath) throws IOException, DataSetException {
+            Classification.Builder builder;
+
+            switch (config.batchType) {
+                case SOURCE:
+                    builder = new Classification.Builder<Set<String>>();
+                    builder.setPropertyExtractor(new SourcePropertyExtractor());
+                    break;
+                case PRIMES:
+                    builder = new Classification.Builder<BigInteger>();
+                    builder.setPropertyExtractor(new PrimePropertyExtractor());
+                    break;
+                case NONE:
+                default:
+                    throw new NotImplementedException();
+            }
+
+            PriorProbabilityEstimator estimator;
+
+            switch (config.priorType) {
+                case ESTIMATE:
+                    estimator = new NonNegativeLeastSquaresFitPriorProbabilityEstimator(config.classificationTable);
+                    break;
+                case UNIFORM:
+                    estimator = new UniformPriorProbabilityEstimator(config.classificationTable);
+                    break;
+                case TABLE:
+                    estimator = new UserDefinedPriorProbabilityEstimator(config.classificationTable);
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+
+            DataSetFormatter formatter = null;
+            DataSetSaver dataSetSaver;
+
+            switch (config.exportType) {
+                case CSV:
+                    formatter = new CsvDataSetFormatter();
+                    break;
+                case JSON:
+                    formatter = new JsonDataSetFormatter();
+                    break;
+                case NONE:
+                    formatter = null;
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+
+            if (formatter == null) {
+                dataSetSaver = new NoActionDataSetSaver();
+            } else {
+                ExtendedWriter datasetWriter = new ExtendedWriter(new File(config.outputFolderPath, "dataset.json"));
+                switch (config.memoryType) {
+                    case DISK:
+                        dataSetSaver = new FromFileDataSetSaver(new FileDataSetIterator(datasetFilePath), formatter, datasetWriter);
+                        break;
+                    case MEMORY:
+                        dataSetSaver = new InMemoryDataSetSaver(formatter, datasetWriter);
+                        break;
+                    case NONE:
+                        dataSetSaver = new NoActionDataSetSaver();
+                        break;
+                    default:
+                        throw new NotImplementedException();
+                }
+            }
+
+            if (datasetFilePath != null) builder.setDataSetIterator(new FileDataSetIterator(datasetFilePath));
+            builder.setDataSetSaver(dataSetSaver);
+            builder.setPriorProbabilityEstimator(estimator);
+            builder.setStatisticsAggregator(new BatchesStatisticsAggregator(new ArrayList<>(config.classificationTable.getGroupsNames()), config.outputFolderPath));
+            builder.setTable(config.classificationTable);
+
+            return builder;
+        }
+    }
+
     public void classify() throws DataSetException {
         long time = System.currentTimeMillis();
 
@@ -129,7 +387,7 @@ public class Classification<BatchProperty> {
             List<ClassificationKeyStub> stubs = batchHolder.getKeyIdsByBatchId(batchId).stream().map(keyId -> keyIdToKeyStub.get(keyId)).collect(Collectors.toList());
             ClassificationContainer container = classifyAsBatch(stubs);
             if (container == null) continue;
-            statisticsAggregator.addStatistics(container);
+            statisticsAggregator.addStatistics(container, stubs.toArray(new ClassificationKeyStub[stubs.size()]));
             dataSetSaver.setBatchClassificationResult(batchId, container);
         }
 
@@ -137,7 +395,7 @@ public class Classification<BatchProperty> {
             ClassificationKeyStub stub = keyIdToKeyStub.get(keyId);
             ClassificationContainer container = classifyIndividually(stub);
             if (container == null) continue;
-            statisticsAggregator.addStatistics(container);
+            statisticsAggregator.addStatistics(container, stub);
             dataSetSaver.setBatchClassificationResult(batchHolder.getBatchIdForKeyId(keyId), container);
         }
         System.out.println(String.format("Classified all batches in %d seconds", (System.currentTimeMillis() - time) / 1000));

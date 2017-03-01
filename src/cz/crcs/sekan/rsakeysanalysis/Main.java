@@ -3,29 +3,28 @@ package cz.crcs.sekan.rsakeysanalysis;
 import cz.crcs.sekan.rsakeysanalysis.classification.DataSetClassification;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.Classification;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori.*;
-import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.dataset.*;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.exception.ClassificationException;
-import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.statistics.BatchesStatisticsAggregator;
-import cz.crcs.sekan.rsakeysanalysis.classification.key.property.PrimePropertyExtractor;
-import cz.crcs.sekan.rsakeysanalysis.classification.key.property.SourcePropertyExtractor;
+import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.exception.DataSetException;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationTable;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.RawTable;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.makefile.Makefile;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.transformation.exception.TransformationNotFoundException;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.transformation.exception.WrongTransformationFormatException;
 import cz.crcs.sekan.rsakeysanalysis.classification.tests.ClassificationSuccess;
+import cz.crcs.sekan.rsakeysanalysis.classification.tests.ClassificationSuccessTest;
 import cz.crcs.sekan.rsakeysanalysis.classification.tests.Misclassification;
 import cz.crcs.sekan.rsakeysanalysis.classification.tests.ModulusFactors;
-import cz.crcs.sekan.rsakeysanalysis.common.ExtendedWriter;
+import cz.crcs.sekan.rsakeysanalysis.classification.tests.util.ClassificationSuccessStatisticsAggregator;
+import cz.crcs.sekan.rsakeysanalysis.classification.tests.util.SimulatedDataSetIterator;
 import cz.crcs.sekan.rsakeysanalysis.tools.*;
 import org.json.simple.parser.ParseException;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.math.BigInteger;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
@@ -74,7 +73,8 @@ public class Main {
                     break;
                 case "-cs":
                 case "--classificationSuccess":
-                    ClassificationSuccess.compute(args[++i], args[++i], Long.valueOf(args[++i])); // TODO new algorithm
+                    //ClassificationSuccess.compute(args[++i], args[++i], Long.valueOf(args[++i])); // TODO new algorithm
+                    i = classificationSuccess(Arrays.copyOfRange(args, ++i, args.length));
                     break;
                 case "-mc":
                 case "--misclassification":
@@ -139,81 +139,7 @@ public class Main {
         }
     }
 
-    private static final String BATCH_TYPE_SWITCH = "-b";
 
-    private enum BatchType {
-        SOURCE("source"),
-        PRIMES("primes"),
-        NONE("none");
-
-        private final String name;
-
-        BatchType(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public String toString() {
-            return name;
-        }
-    }
-
-    private static final String PRIOR_TYPE_SWITCH = "-p";
-
-    private enum PriorType {
-        ESTIMATE("estimate"),
-        UNIFORM("uniform"),
-        TABLE("table");
-
-        private final String name;
-
-        PriorType(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public String toString() {
-            return name;
-        }
-    }
-
-    private static final String EXPORT_TYPE_SWITCH = "-e";
-
-    private enum ExportType {
-        NONE("none"),
-        JSON("json"),
-        CSV("csv");
-
-        private final String name;
-
-        ExportType(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public String toString() {
-            return name;
-        }
-    }
-
-    private static final String MEMORY_TYPE_SWITCH = "-t";
-
-    private enum MemoryType {
-        NONE("none"),
-        DISK("disk"),
-        MEMORY("memory");
-
-        private final String name;
-
-        MemoryType(String name) {
-            this.name = name;
-        }
-
-        @Override
-        public String toString() {
-            return name;
-        }
-    }
 
     /**
      * Helper function for show information about all application flags.
@@ -252,17 +178,17 @@ public class Main {
                 "                        in    = path to txt file\n" +
                 "                                Each line of file contains one factor (hex).\n" +
                 "  -c   OPTIONS         Classify keys from key set.\n" +
-                "                        OPTIONS = table in out " + BATCH_TYPE_SWITCH + " batch "
-                + PRIOR_TYPE_SWITCH + " prior "
-                + EXPORT_TYPE_SWITCH + " export "
-                + MEMORY_TYPE_SWITCH + " temp \n" +
+                "                        OPTIONS = table in out " + Classification.BuildHelper.BATCH_TYPE_SWITCH + " batch "
+                + Classification.BuildHelper.PRIOR_TYPE_SWITCH + " prior "
+                + Classification.BuildHelper.EXPORT_TYPE_SWITCH + " export "
+                + Classification.BuildHelper.MEMORY_TYPE_SWITCH + " temp \n" +
                 "                         table  = path to classification table file\n" +
                 "                         in     = path to key set\n" +
                 "                         out    = path to folder for storing results\n" +
-                "                         batch  = " + BatchType.SOURCE + "|" + BatchType.PRIMES + "|" + BatchType.NONE + " -- how to batch keys\n" +
-                "                         prior  = " + PriorType.ESTIMATE + "|" + PriorType.UNIFORM + "|" + PriorType.TABLE + " -- prior probability\n" +
-                "                         export = " + ExportType.NONE + "|" + ExportType.JSON + "|" + ExportType.CSV + " -- annotated dataset export format\n" +
-                "                         temp   = " + MemoryType.NONE + "|" + MemoryType.DISK + "|" + MemoryType.MEMORY + " -- only for export\n" +
+                "                         batch  = " + Classification.BatchType.SOURCE + "|" + Classification.BatchType.PRIMES + "|" + Classification.BatchType.NONE + " -- how to batch keys\n" +
+                "                         prior  = " + Classification.PriorType.ESTIMATE + "|" + Classification.PriorType.UNIFORM + "|" + Classification.PriorType.TABLE + " -- prior probability\n" +
+                "                         export = " + Classification.ExportType.NONE + "|" + Classification.ExportType.JSON + "|" + Classification.ExportType.CSV + " -- annotated dataset export format\n" +
+                "                         temp   = " + Classification.MemoryType.NONE + "|" + Classification.MemoryType.DISK + "|" + Classification.MemoryType.MEMORY + " -- only for export\n" +
                 "  -rd  in    out       Remove duplicity from key set.\n" +
                 "                        in    = path to key set\n" +
                 "                        out   = path to key set\n" +
@@ -368,126 +294,27 @@ public class Main {
         String datasetFilePath = args[1];
         String outputFolderPath = args[2];
 
-        BatchType batchType = BatchType.SOURCE;
-        PriorType priorType = PriorType.ESTIMATE;
-        ExportType exportType = ExportType.NONE;
-        MemoryType memoryType = MemoryType.DISK;
-
-        if ((args.length - 3) % 2 != 0) {
-            throw new IllegalArgumentException("Bad number of arguments, some switch might be missing an option");
-        }
-
-        int consumedArguments = 3;
-
-        for (; consumedArguments < args.length; consumedArguments++) {
-            switch (args[consumedArguments]) {
-                case BATCH_TYPE_SWITCH:
-                    batchType = BatchType.valueOf(args[++consumedArguments].toUpperCase());
-                    break;
-                case PRIOR_TYPE_SWITCH:
-                    priorType = PriorType.valueOf(args[++consumedArguments].toUpperCase());
-                    break;
-                case EXPORT_TYPE_SWITCH:
-                    exportType = ExportType.valueOf(args[++consumedArguments].toUpperCase());
-                    break;
-                case MEMORY_TYPE_SWITCH:
-                    memoryType = MemoryType.valueOf(args[++consumedArguments].toUpperCase());
-                    break;
-                default:
-                    throw new IllegalArgumentException("Invalid option for classification: " + args[consumedArguments]);
-            }
-        }
-
-
-        RawTable table = RawTable.load(tableFilePath);
-        ClassificationTable classificationTable = table.computeClassificationTable();
-
-        //Create folder for results if does not exist
-        File folderFile = new File(outputFolderPath);
-        if (!folderFile.exists()) {
-            if (!folderFile.mkdirs()) {
-                throw new IllegalArgumentException("Cannot create folder.");
-            }
-        }
-
-        Classification.Builder builder;
-
-        switch (batchType) {
-            case SOURCE:
-                builder = new Classification.Builder<Set<String>>();
-                builder.setPropertyExtractor(new SourcePropertyExtractor());
-                break;
-            case PRIMES:
-                builder = new Classification.Builder<BigInteger>();
-                builder.setPropertyExtractor(new PrimePropertyExtractor());
-                break;
-            case NONE:
-            default:
-                throw new NotImplementedException();
-        }
-
-        PriorProbabilityEstimator estimator;
-
-        switch (priorType) {
-            case ESTIMATE:
-                estimator = new NonNegativeLeastSquaresFitPriorProbabilityEstimator(classificationTable);
-                break;
-            case UNIFORM:
-                estimator = new UniformPriorProbabilityEstimator(classificationTable);
-                break;
-            case TABLE:
-                estimator = new UserDefinedPriorProbabilityEstimator(classificationTable);
-                break;
-            default:
-                throw new NotImplementedException();
-        }
-
-        DataSetFormatter formatter = null;
-        DataSetSaver dataSetSaver;
-
-        switch (exportType) {
-            case CSV:
-                formatter = new CsvDataSetFormatter();
-                break;
-            case JSON:
-                formatter = new JsonDataSetFormatter();
-                break;
-            case NONE:
-                formatter = null;
-                dataSetSaver = new NoActionDataSetSaver();
-                break;
-            default:
-                throw new NotImplementedException();
-        }
-
-        if (formatter == null) {
-            dataSetSaver = new NoActionDataSetSaver();
-        } else {
-            ExtendedWriter datasetWriter = new ExtendedWriter(new File(outputFolderPath, "dataset.json"));
-            switch (memoryType) {
-                case DISK:
-                    dataSetSaver = new FromFileDataSetSaver(new FileDataSetIterator(datasetFilePath), formatter, datasetWriter);
-                    break;
-                case MEMORY:
-                    dataSetSaver = new InMemoryDataSetSaver(formatter, datasetWriter);
-                    break;
-                case NONE:
-                    dataSetSaver = new NoActionDataSetSaver();
-                    break;
-                default:
-                    throw new NotImplementedException();
-            }
-        }
-
-        builder.setDataSetIterator(new FileDataSetIterator(datasetFilePath));
-        builder.setDataSetSaver(dataSetSaver);
-        builder.setPriorProbabilityEstimator(estimator);
-        builder.setStatisticsAggregator(new BatchesStatisticsAggregator(new ArrayList<>(classificationTable.getGroupsNames()), outputFolderPath));
-        builder.setTable(classificationTable);
+        Classification.BuildHelper.Configuration configuration = Classification.BuildHelper.fromCommandLineOptions(args, 3, tableFilePath, outputFolderPath);
+        Classification.Builder builder = Classification.BuildHelper.prepareBuilder(configuration, datasetFilePath);
 
         builder.build().classify();
 
-        return consumedArguments;
+        return configuration.consumedArguments;
+    }
+
+    private static int classificationSuccess(String[] args)
+            throws DataSetException, WrongTransformationFormatException, TransformationNotFoundException, ParseException, IOException, NoSuchAlgorithmException {
+        String tableFilePath = args[0];
+        String outputFolderPath = args[1];
+        int offset = 2;
+
+        Classification.BuildHelper.Configuration configuration =
+                Classification.BuildHelper.fromCommandLineOptions(args, offset, tableFilePath, outputFolderPath);
+        //ClassificationSuccessTest.runFromConfiguration(configuration);
+        ClassificationSuccessTest.groupSuccess(configuration);
+        //ClassificationSuccessTest.theoreticalSuccess(configuration);
+
+        return configuration.consumedArguments;
     }
 
     // TODO proper test

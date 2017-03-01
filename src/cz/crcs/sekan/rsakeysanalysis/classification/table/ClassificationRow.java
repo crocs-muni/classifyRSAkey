@@ -47,25 +47,22 @@ public class ClassificationRow {
         return sources.get(source);
     }
 
+    public static final int ALL_GROUPS = -1;
+
     /**
      * Get names of top groups
-     * @param number num of values
+     * @param number num of values, or ALL_GROUPS for all
      * @return set of groups names
      */
-    public Set<String> getTopGroups(int number) {
-        SortedSet<Map.Entry<String, BigDecimal>> set = new TreeSet<>(new Comparator<Map.Entry<String, BigDecimal>>() {
-            @Override
-            public int compare(Map.Entry<String, BigDecimal> e1,
-                               Map.Entry<String, BigDecimal> e2) {
-                return e2.getValue().compareTo(e1.getValue());
-            }
-        });
+    public List<String> getTopGroups(int number) {
+        SortedSet<Map.Entry<String, BigDecimal>> set = new TreeSet<>((e1, e2) -> e2.getValue().compareTo(e1.getValue()));
         set.addAll(sources.entrySet());
-        Set<String> groups = new HashSet<>();
+        List<String> groups = new ArrayList<>();
+        int groupsLeft = number;
         for (Map.Entry<String, BigDecimal> val : set) {
-            if (number <= 0) break;
+            if (number != ALL_GROUPS && groupsLeft <= 0) break;
             groups.add(val.getKey());
-            number--;
+            groupsLeft--;
         }
         return groups;
     }
@@ -278,13 +275,17 @@ public class ClassificationRow {
     }
 
     public void applyPriorProbabilities(PriorProbability priorProbability) {
+        applyPriorProbabilities(priorProbability, true);
+    }
+
+    public void applyPriorProbabilities(PriorProbability priorProbability, boolean normalize) {
         if (!priorProbability.keySet().containsAll(sources.keySet())) {
             throw new IllegalArgumentException("Not all probabilities are defined");
         }
         for (String group : sources.keySet()) {
             sources.replace(group, sources.get(group).multiply(priorProbability.get(group)));
         }
-        normalize();
+        if (normalize) normalize();
     }
 
     public ClassificationRow deepCopy() {

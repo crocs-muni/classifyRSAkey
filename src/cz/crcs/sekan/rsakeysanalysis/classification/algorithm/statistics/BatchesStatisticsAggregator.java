@@ -1,6 +1,7 @@
 package cz.crcs.sekan.rsakeysanalysis.classification.algorithm.statistics;
 
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori.PriorProbabilityEstimator;
+import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKeyStub;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationContainer;
 import cz.crcs.sekan.rsakeysanalysis.common.ExtendedWriter;
 
@@ -43,7 +44,7 @@ public class BatchesStatisticsAggregator implements StatisticsAggregator {
     }
 
     @Override
-    public void addStatistics(ClassificationContainer container) {
+    public void addStatistics(ClassificationContainer container, ClassificationKeyStub... keyStubs) {
         long batchSize = container.getNumOfUniqueKeys();
 
         BatchStatistic modified = positiveUniqueBatches.getOrDefault(batchSize, new BatchStatistic(batchSize,
@@ -100,6 +101,7 @@ public class BatchesStatisticsAggregator implements StatisticsAggregator {
             }
         } catch (IOException ex) {
             System.err.println("Error while writing combined statistics");
+            ex.printStackTrace(System.err);
         }
 
     }

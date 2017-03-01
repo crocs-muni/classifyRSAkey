@@ -60,7 +60,24 @@ public class ClassificationKey {
     private List<ClassificationFactor> qmoFactors = null;
     private List<ClassificationFactor> qpoFactors = null;
 
+    /**
+     * Used for classification success test -- real source which generated this key.
+     */
+    private String realSource;
+
+    public String getRealSource() {
+        return realSource;
+    }
+
     private ClassificationKey() {
+    }
+
+    public ClassificationKey(RSAKey rsaKey, Set<String> source, int count, String identification, String realSource) {
+        this.rsaKey = rsaKey;
+        this.source = source;
+        this.count = count;
+        this.identification = identification;
+        this.realSource = realSource;
     }
 
     /**

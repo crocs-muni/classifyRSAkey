@@ -1,6 +1,7 @@
 package cz.crcs.sekan.rsakeysanalysis.classification.algorithm.statistics;
 
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori.PriorProbabilityEstimator;
+import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKeyStub;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationContainer;
 import cz.crcs.sekan.rsakeysanalysis.common.ExtendedWriter;
 import cz.crcs.sekan.rsakeysanalysis.template.Template;
@@ -79,7 +80,7 @@ public class HistoricalBatchesStatisticsAggregator implements StatisticsAggregat
     }
 
     @Override
-    public void addStatistics(ClassificationContainer container) {
+    public void addStatistics(ClassificationContainer container, ClassificationKeyStub... keyStubs) {
         long allKeys = container.getNumOfAllKeys();
         long uniqueKeys = container.getNumOfUniqueKeys();
 

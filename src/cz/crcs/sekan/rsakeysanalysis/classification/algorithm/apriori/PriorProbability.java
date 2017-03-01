@@ -3,10 +3,7 @@ package cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori;
 import org.json.simple.JSONObject;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * @author xnemec1
@@ -29,5 +26,24 @@ public class PriorProbability extends TreeMap<String, BigDecimal> {
             object.put(groupName, getGroupProbability(groupName).toString());
         }
         return object;
+    }
+
+    public static final int BIG_DECIMAL_SCALE = 20;
+
+    public static PriorProbability uniformProbability(List<String> groupNames) {
+        PriorProbability priorProbability = new PriorProbability();
+        BigDecimal probability = BigDecimal.ONE.divide(BigDecimal.valueOf(groupNames.size()), BIG_DECIMAL_SCALE, BigDecimal.ROUND_HALF_EVEN);
+        for (String groupName : groupNames) {
+            priorProbability.put(groupName, probability);
+        }
+        return priorProbability;
+    }
+
+    public PriorProbability makeCopy() {
+        PriorProbability copy = new PriorProbability();
+        for (Map.Entry<String, BigDecimal> entry : entrySet()) {
+            copy.put(entry.getKey(), entry.getValue());
+        }
+        return copy;
     }
 }

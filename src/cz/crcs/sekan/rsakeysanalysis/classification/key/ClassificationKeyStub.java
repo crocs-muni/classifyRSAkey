@@ -2,8 +2,6 @@ package cz.crcs.sekan.rsakeysanalysis.classification.key;
 
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationTable;
 
-import java.math.BigInteger;
-
 /**
  * @author xnemec1
  * @version 11/22/16.
@@ -20,10 +18,21 @@ public class ClassificationKeyStub {
      */
     private int duplicityCount;
 
+    /**
+     * Usd for classification success test - the real group which generated this key.
+     */
+    private String realSource;
+
     public static ClassificationKeyStub fromClassificationKey(ClassificationKey key, ClassificationTable table) {
         ClassificationKeyStub stub = new ClassificationKeyStub();
         stub.duplicityCount = key.getCount();
-        stub.mask = table.generationIdentification(key);
+        if (key.getRealSource() != null && key.getIdentification() != null) {
+            // this is a test key for the purpose of classification success
+            stub.mask = key.getIdentification();
+        } else {
+            stub.mask = table.generationIdentification(key);
+        }
+        stub.realSource = key.getRealSource();
         return stub;
     }
 
@@ -33,5 +42,9 @@ public class ClassificationKeyStub {
 
     public int getDuplicityCount() {
         return duplicityCount;
+    }
+
+    public String getRealSource() {
+        return realSource;
     }
 }

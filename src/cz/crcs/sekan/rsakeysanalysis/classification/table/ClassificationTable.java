@@ -36,7 +36,7 @@ public class ClassificationTable {
             long sum = tableGrouped.get(group).values().stream().mapToLong(Long::longValue).sum();
             Map<String, Double> identifications = new TreeMap<>();
             for (Map.Entry<String, Long> entry : tableGrouped.get(group).entrySet()) {
-                identifications.put(entry.getKey(), (entry.getValue() * 100.0)/sum);
+                identifications.put(entry.getKey(), Double.valueOf(entry.getValue()) / sum);
             }
             normalized.put(groupName, identifications);
             priorProbability.put(groupName, groupWeights.get(group));
@@ -61,6 +61,10 @@ public class ClassificationTable {
     }
 
     public void applyPriorProbability(PriorProbability priorProbability) {
+        applyPriorProbability(priorProbability, true);
+    }
+
+    public void applyPriorProbability(PriorProbability priorProbability, boolean normalize) {
         if (priorProbability != null) {
             // use the default user defined prior probabilities from the table, otherwise replace
             this.priorProbability = priorProbability;
@@ -68,7 +72,7 @@ public class ClassificationTable {
 
         for (String identification : table.keySet()) {
             ClassificationRow row = table.get(identification);
-            row.applyPriorProbabilities(this.priorProbability);
+            row.applyPriorProbabilities(this.priorProbability, normalize);
         }
     }
 
@@ -111,14 +115,14 @@ public class ClassificationTable {
         return table;
     }
 
-    public ClassificationRow[] getClassificationRowsForGroup(String groupName) {
+    public List<ClassificationRow> getClassificationRowsForGroup(String groupName) {
         ArrayList<ClassificationRow> rows = new ArrayList<>();
         for (ClassificationRow row : table.values()) {
             if (row.getSource(groupName) != null) {
                 rows.add(row);
             }
         }
-        return rows.toArray(new ClassificationRow[rows.size()]);
+        return rows;
     }
 
     public void exportToCsvFormat(String outFileName) throws IOException {
@@ -163,5 +167,9 @@ public class ClassificationTable {
         copyTable.identificationGenerator = identificationGenerator;
         copyTable.priorProbability = priorProbability;
         return copyTable;
+    }
+
+    public List<String> getMasks() {
+        return new ArrayList<>(getTable().keySet());
     }
 }
