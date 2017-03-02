@@ -18,4 +18,9 @@ public class CsvDataSetFormatter implements DataSetFormatter {
     public String classifiedKeyToLine(ClassificationKey key, ClassificationContainer container) {
         return null;
     }
+
+    @Override
+    public String originalKeyToLine(ClassificationKey key) {
+        return null;
+    }
 }

@@ -11,6 +11,8 @@ import org.json.simple.parser.ParseException;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Peter Sekan, peter.sekan@mail.muni.cz
@@ -96,6 +98,39 @@ public class ClassificationKey {
 
     private static boolean isNewJsonFormat(String json) throws ParseException {
         return !json.contains("\"modulus\"");
+    }
+
+    private static final BigInteger mod = BigInteger.ZERO.setBit(128);
+    // shorten the modulus before saving it to conserve memory; this could use a hash function, but low 128 bits differ
+    private static BigInteger shortenModulus(BigInteger modulus) {
+        return modulus.mod(mod);
+    }
+
+    private static final Pattern patternModulus = Pattern.compile("\"(n|modulus)\" *: *\"(0x|0X)?([a-zA-Z0-9]+)\"");
+
+    public static BigInteger getShortenedModulusFromJSON(String json) {
+        if (json == null) return null;
+        Matcher m = patternModulus.matcher(json);
+        if (m.find()) {
+            String matched = m.group(0);
+            String[] split = matched.split("\"");
+            if (split.length >= 4) {
+                matched = split[3];
+                if (matched.startsWith("0x") || matched.startsWith("0X")) matched = matched.substring(2);
+            } else {
+                System.err.println("No modulus present in json");
+                return null;
+            }
+            return shortenModulus(new BigInteger(matched, 16));
+        }
+        return null;
+    }
+
+    public BigInteger getShortenedModulus() {
+        if (rsaKey == null || rsaKey.getModulus() == null) {
+            return null;
+        }
+        return shortenModulus(rsaKey.getModulus());
     }
 
     public static ClassificationKey fromNewJsonFormat(String json) throws ParseException, WrongKeyException {

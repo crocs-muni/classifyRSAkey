@@ -80,8 +80,6 @@ public class NonNegativeLeastSquaresFitPriorProbabilityEstimator extends PriorPr
             priorProbability.put(groupNames.get(i), BigDecimal.valueOf(parameters[i]));
         }
 
-        System.out.println(maskToFrequency);
-
         return priorProbability;
     }
 

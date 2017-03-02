@@ -38,7 +38,7 @@ public class FromFileDataSetSaver implements DataSetSaver {
 
     @Override
     public void registerKeyUnderKeyId(ClassificationKey key, Long keyId) {
-        keyModulusToKeyId.put(shortenModulus(key.getRsaKey().getModulus()), keyId);
+        keyModulusToKeyId.put(key.getShortenedModulus(), keyId);
     }
 
     @Override
@@ -50,8 +50,7 @@ public class FromFileDataSetSaver implements DataSetSaver {
     public void reconstructDataSet(BatchHolder batchHolder, Map<Long, ClassificationKeyStub> keyIdToKeyStub) {
         while (dataSetIterator.hasNext()) {
             ClassificationKey key = dataSetIterator.next();
-            BigInteger modulus = key.getRsaKey().getModulus();
-            Long keyId = keyModulusToKeyId.get(shortenModulus(modulus));
+            Long keyId = keyModulusToKeyId.get(key.getShortenedModulus());
             Long batchId = batchHolder.getBatchIdForKeyId(keyId);
             if (batchId == null) continue; // key was not parsed previously, e.g. mask could not be extracted
             ClassificationContainer container = batchIdToContainer.get(batchId);
@@ -64,12 +63,5 @@ public class FromFileDataSetSaver implements DataSetSaver {
             }
         }
         dataSetIterator.close();
-    }
-
-    private static final BigInteger mod = BigInteger.ZERO.setBit(128);
-
-    // shorten the modulus before saving it to conserve memory; this could use a hash function, but low 128 bits differ
-    private static BigInteger shortenModulus(BigInteger modulus) {
-        return modulus.mod(mod);
     }
 }

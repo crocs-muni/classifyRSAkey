@@ -3,6 +3,7 @@ package cz.crcs.sekan.rsakeysanalysis;
 import cz.crcs.sekan.rsakeysanalysis.classification.DataSetClassification;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.Classification;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori.*;
+import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.dataset.JsonDataSetFormatter;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.exception.ClassificationException;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.exception.DataSetException;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationTable;
@@ -101,7 +102,8 @@ public class Main {
                     break;
                 case "-rd":
                 case "--removeDuplicity":
-                    RemoveDuplicity.run(args[++i], args[++i]);
+                    //RemoveDuplicity.run(args[++i], args[++i]);
+                    DuplicityRemover.removeDuplicities(args[++i], args[++i], new JsonDataSetFormatter());
                     break;
                 case "-nc":
                 case "--nc":

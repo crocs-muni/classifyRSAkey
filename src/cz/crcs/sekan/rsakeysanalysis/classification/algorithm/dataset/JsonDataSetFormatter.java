@@ -15,4 +15,9 @@ public class JsonDataSetFormatter implements DataSetFormatter {
         if (container != null) jsonKey.put("classification", container.toJSON());
         return jsonKey.toString();
     }
+
+    @Override
+    public String originalKeyToLine(ClassificationKey key) {
+        return key.toJSON().toString();
+    }
 }

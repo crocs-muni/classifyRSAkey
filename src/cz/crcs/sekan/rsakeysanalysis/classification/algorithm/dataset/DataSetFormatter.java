@@ -9,4 +9,5 @@ import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationContaine
  */
 public interface DataSetFormatter {
     public String classifiedKeyToLine(ClassificationKey key, ClassificationContainer container);
+    public String originalKeyToLine(ClassificationKey key);
 }
