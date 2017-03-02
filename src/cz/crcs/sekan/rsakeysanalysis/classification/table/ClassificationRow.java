@@ -296,4 +296,13 @@ public class ClassificationRow {
         }
         return copy;
     }
+
+    /**
+     * For tests only
+     * @param sourceName
+     * @param probability
+     */
+    public BigDecimal addSource(String sourceName, BigDecimal probability) {
+        return sources.put(sourceName, probability);
+    }
 }

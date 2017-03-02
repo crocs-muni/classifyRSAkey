@@ -5,6 +5,7 @@ import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKey;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.identification.IdentificationGenerator;
 import cz.crcs.sekan.rsakeysanalysis.common.ExtendedWriter;
 import javafx.util.Pair;
+import org.omg.CORBA.INTERNAL;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -171,5 +172,20 @@ public class ClassificationTable {
 
     public List<String> getMasks() {
         return new ArrayList<>(getTable().keySet());
+    }
+
+    /**
+     * For tests only
+     * @param sourceName
+     * @param maskProbabilities
+     */
+    public void addSource(String sourceName, Map<String, BigDecimal> maskProbabilities) {
+        Set<String> newGroup = new TreeSet<>();
+        newGroup.add(sourceName);
+        groups.put(sourceName, newGroup);
+        for (String mask : maskProbabilities.keySet()) {
+            ClassificationRow row = table.get(mask);
+            row.addSource(sourceName, maskProbabilities.get(mask));
+        }
     }
 }

@@ -2,31 +2,28 @@ package cz.crcs.sekan.rsakeysanalysis;
 
 import cz.crcs.sekan.rsakeysanalysis.classification.DataSetClassification;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.Classification;
+import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.ClassificationConfiguration;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori.*;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.dataset.JsonDataSetFormatter;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.exception.ClassificationException;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.exception.DataSetException;
+import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationRow;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationTable;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.RawTable;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.makefile.Makefile;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.transformation.exception.TransformationNotFoundException;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.transformation.exception.WrongTransformationFormatException;
-import cz.crcs.sekan.rsakeysanalysis.classification.tests.ClassificationSuccess;
+import cz.crcs.sekan.rsakeysanalysis.classification.tests.AprioriTest;
 import cz.crcs.sekan.rsakeysanalysis.classification.tests.ClassificationSuccessTest;
 import cz.crcs.sekan.rsakeysanalysis.classification.tests.Misclassification;
 import cz.crcs.sekan.rsakeysanalysis.classification.tests.ModulusFactors;
-import cz.crcs.sekan.rsakeysanalysis.classification.tests.util.ClassificationSuccessStatisticsAggregator;
-import cz.crcs.sekan.rsakeysanalysis.classification.tests.util.SimulatedDataSetIterator;
 import cz.crcs.sekan.rsakeysanalysis.tools.*;
 import org.json.simple.parser.ParseException;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
@@ -74,7 +71,7 @@ public class Main {
                     break;
                 case "-cs":
                 case "--classificationSuccess":
-                    //ClassificationSuccess.compute(args[++i], args[++i], Long.valueOf(args[++i])); // TODO new algorithm
+                    //ClassificationSuccess.compute(args[++i], args[++i], Long.valueOf(args[++i]));
                     i = classificationSuccess(Arrays.copyOfRange(args, ++i, args.length));
                     break;
                 case "-mc":
@@ -129,7 +126,10 @@ public class Main {
                     break;
                 case "-a":
                 case "--apriori":
-                    aprioriTest(args[++i], args[++i]); // TODO new algorithm
+                    // aprioriTest(args[++i], args[++i])
+                    ClassificationConfiguration config = ClassificationConfiguration.fromCommandLineOptions(args, 2, args[++i], null);
+                    i = config.consumedArguments;
+                    AprioriTest.testEstimatePrecision(config);
                     break;
                 default:
                     System.out.println("Undefined parameter '" + args[i] + "'");
@@ -180,10 +180,10 @@ public class Main {
                 "                        in    = path to txt file\n" +
                 "                                Each line of file contains one factor (hex).\n" +
                 "  -c   OPTIONS         Classify keys from key set.\n" +
-                "                        OPTIONS = table in out " + Classification.BuildHelper.BATCH_TYPE_SWITCH + " batch "
-                + Classification.BuildHelper.PRIOR_TYPE_SWITCH + " prior "
-                + Classification.BuildHelper.EXPORT_TYPE_SWITCH + " export "
-                + Classification.BuildHelper.MEMORY_TYPE_SWITCH + " temp \n" +
+                "                        OPTIONS = table in out " + ClassificationConfiguration.BATCH_TYPE_SWITCH + " batch "
+                + ClassificationConfiguration.PRIOR_TYPE_SWITCH + " prior "
+                + ClassificationConfiguration.EXPORT_TYPE_SWITCH + " export "
+                + ClassificationConfiguration.MEMORY_TYPE_SWITCH + " temp \n" +
                 "                         table  = path to classification table file\n" +
                 "                         in     = path to key set\n" +
                 "                         out    = path to folder for storing results\n" +
@@ -194,6 +194,10 @@ public class Main {
                 "  -rd  in    out       Remove duplicity from key set.\n" +
                 "                        in    = path to key set\n" +
                 "                        out   = path to key set\n" +
+                "  -a   table OPTIONS   Test a priori probability estimation.\n" +
+                "                        table = path to classification table file\n" +
+                "                        " + ClassificationConfiguration.KEY_COUNT_SWITCH + " runs  = number of random estimations\n" +
+                "                        " + ClassificationConfiguration.RNG_SEED_SWITCH + " seed  = optional seed for RNG\n" +
                 "  -nc  table           Set classification table for not classify some keys.\n" +
                 "                        table = path to classification table file\n" +
                 "  -h                   Show this help.\n" +
@@ -296,7 +300,7 @@ public class Main {
         String datasetFilePath = args[1];
         String outputFolderPath = args[2];
 
-        Classification.BuildHelper.Configuration configuration = Classification.BuildHelper.fromCommandLineOptions(args, 3, tableFilePath, outputFolderPath);
+        ClassificationConfiguration configuration = ClassificationConfiguration.fromCommandLineOptions(args, 3, tableFilePath, outputFolderPath);
         Classification.Builder builder = Classification.BuildHelper.prepareBuilder(configuration, datasetFilePath);
 
         builder.build().classify();
@@ -310,8 +314,8 @@ public class Main {
         String outputFolderPath = args[1];
         int offset = 2;
 
-        Classification.BuildHelper.Configuration configuration =
-                Classification.BuildHelper.fromCommandLineOptions(args, offset, tableFilePath, outputFolderPath);
+        ClassificationConfiguration configuration =
+                ClassificationConfiguration.fromCommandLineOptions(args, offset, tableFilePath, outputFolderPath);
         //ClassificationSuccessTest.runFromConfiguration(configuration);
         ClassificationSuccessTest.groupSuccess(configuration);
         //ClassificationSuccessTest.theoreticalSuccess(configuration);

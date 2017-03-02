@@ -22,8 +22,6 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InterruptedIOException;
-import java.lang.reflect.Array;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.List;
@@ -169,105 +167,8 @@ public class Classification<BatchProperty> {
     }
 
     public static class BuildHelper {
-        public static final String BATCH_TYPE_SWITCH = "-b";
-        public static final String PRIOR_TYPE_SWITCH = "-p";
-        public static final String EXPORT_TYPE_SWITCH = "-e";
-        public static final String MEMORY_TYPE_SWITCH = "-t";
 
-        public static final String KEY_COUNT_SWITCH = "-c";
-        public static final String RNG_SEED_SWITCH = "-s";
-        public static final String PRIOR_PROBABILITY_SWITCH = "-a";
-
-        public static class Configuration {
-            public int consumedArguments;
-
-            // classification + success
-            public Classification.BatchType batchType = Classification.BatchType.SOURCE;
-            public Classification.PriorType priorType = Classification.PriorType.ESTIMATE;
-            public Classification.ExportType exportType = Classification.ExportType.NONE;
-            public Classification.MemoryType memoryType = Classification.MemoryType.DISK;
-            public ClassificationTable classificationTable;
-            public String outputFolderPath;
-
-            // success
-            public int keyCount;
-            public Long rngSeed;
-            public PriorProbability priorProbability;
-
-            public Configuration deepCopy() {
-                Configuration copy = new Configuration();
-                copy.consumedArguments = consumedArguments;
-                copy.batchType = batchType;
-                copy.priorType = priorType;
-                copy.exportType = exportType;
-                copy.memoryType = memoryType;
-                copy.outputFolderPath = outputFolderPath;
-                copy.keyCount = keyCount;
-                copy.rngSeed = rngSeed;
-                copy.classificationTable = classificationTable.makeCopy();
-                copy.priorProbability = priorProbability.makeCopy();
-                return copy;
-            }
-        }
-
-        public static Configuration fromCommandLineOptions(String[] args, int offset,
-                                                           String tableFilePath, String outputFolderPath)
-                throws IOException, ParseException, WrongTransformationFormatException, TransformationNotFoundException, DataSetException {
-
-            Configuration returnObject = new Configuration();
-
-            if ((args.length - offset) % 2 != 0) {
-                //throw new IllegalArgumentException("Bad number of arguments, some switch might be missing an option");
-            }
-
-            returnObject.consumedArguments = offset;
-
-            RawTable table = RawTable.load(tableFilePath);
-            returnObject.classificationTable = table.computeClassificationTable();
-
-            for (; returnObject.consumedArguments < args.length; returnObject.consumedArguments++) {
-                switch (args[returnObject.consumedArguments]) {
-                    case BATCH_TYPE_SWITCH:
-                        returnObject.batchType = Classification.BatchType.valueOf(args[++returnObject.consumedArguments].toUpperCase());
-                        break;
-                    case PRIOR_TYPE_SWITCH:
-                        returnObject.priorType = Classification.PriorType.valueOf(args[++returnObject.consumedArguments].toUpperCase());
-                        break;
-                    case EXPORT_TYPE_SWITCH:
-                        returnObject.exportType = Classification.ExportType.valueOf(args[++returnObject.consumedArguments].toUpperCase());
-                        break;
-                    case MEMORY_TYPE_SWITCH:
-                        returnObject.memoryType = Classification.MemoryType.valueOf(args[++returnObject.consumedArguments].toUpperCase());
-                        break;
-                    case KEY_COUNT_SWITCH:
-                        returnObject.keyCount = Integer.valueOf(args[++returnObject.consumedArguments]);
-                        break;
-                    case RNG_SEED_SWITCH:
-                        returnObject.rngSeed = Long.valueOf(args[++returnObject.consumedArguments]);
-                        break;
-                    case PRIOR_PROBABILITY_SWITCH:
-                        // TODO prior probability configuration the same as for classification
-                        returnObject.priorProbability = PriorProbability.uniformProbability(
-                                new ArrayList<>(returnObject.classificationTable.getGroupsNames()));
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Invalid option for classification: " + args[returnObject.consumedArguments]);
-                }
-            }
-
-            //Create folder for results if does not exist
-            File folderFile = new File(outputFolderPath);
-            if (!folderFile.exists()) {
-                if (!folderFile.mkdirs()) {
-                    throw new IllegalArgumentException("Cannot create folder.");
-                }
-            }
-
-            returnObject.outputFolderPath = outputFolderPath;
-            return returnObject;
-        }
-
-        public static Builder prepareBuilder(Configuration config, String datasetFilePath) throws IOException, DataSetException {
+        public static Builder prepareBuilder(ClassificationConfiguration config, String datasetFilePath) throws IOException, DataSetException {
             Classification.Builder builder;
 
             switch (config.batchType) {
@@ -435,4 +336,5 @@ public class Classification<BatchProperty> {
         }
         return new ClassificationContainer(stub.getDuplicityCount(), table.classifyIdentification(stub.getMask()));
     }
+
 }

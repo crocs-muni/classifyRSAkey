@@ -45,8 +45,8 @@ public class LinearRegressionPriorProbabilityEstimator extends PriorProbabilityE
         double[][] libraryFrequencies = new double[maskCount][groupCount];
 
         for (int i = 0; i < allMaskValues.size(); i++) {
-            Long maskFrequency = maskToFrequency.get(allMaskValues.get(i));
-            if (maskFrequency == null) maskFrequency = 0L;
+            BigDecimal maskFrequency = maskToFrequency.get(allMaskValues.get(i));
+            if (maskFrequency == null) maskFrequency = BigDecimal.ZERO;
             observedFrequencies[i] = maskFrequency.doubleValue();
         }
         observedFrequencies = normalize(observedFrequencies);

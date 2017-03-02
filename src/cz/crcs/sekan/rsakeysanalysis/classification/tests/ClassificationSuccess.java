@@ -20,6 +20,7 @@ import java.util.*;
  * @author Peter Sekan, peter.sekan@mail.muni.cz
  * @version 12.06.2016
  */
+@Deprecated
 public class ClassificationSuccess {
     public static void compute(String infile, String outfile, long keys) throws IOException, ParseException, NoSuchAlgorithmException, WrongTransformationFormatException, TransformationNotFoundException {
         RawTable table = RawTable.load(infile);

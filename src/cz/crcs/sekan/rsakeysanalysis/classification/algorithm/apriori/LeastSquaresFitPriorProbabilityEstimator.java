@@ -88,8 +88,8 @@ public class LeastSquaresFitPriorProbabilityEstimator extends PriorProbabilityEs
 
         this.observedFrequencies = new ArrayRealVector(allMaskValues.size());
         for (int i = 0; i < allMaskValues.size(); i++) {
-            Long maskFrequency = maskToFrequency.get(allMaskValues.get(i));
-            if (maskFrequency == null) maskFrequency = 0L;
+            BigDecimal maskFrequency = maskToFrequency.get(allMaskValues.get(i));
+            if (maskFrequency == null) maskFrequency = BigDecimal.ZERO;
             this.observedFrequencies.setEntry(i, maskFrequency.doubleValue());
         }
 

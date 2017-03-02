@@ -5,6 +5,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import java.lang.reflect.Array;
+import java.math.BigDecimal;
 import java.util.*;
 
 /**
@@ -14,7 +15,7 @@ import java.util.*;
 public abstract class PriorProbabilityEstimator {
     protected ClassificationTable table;
 
-    protected Map<String, Long> maskToFrequency;
+    protected Map<String, BigDecimal> maskToFrequency;
 
     public PriorProbabilityEstimator(ClassificationTable table) {
         this.table = table.makeCopy();
@@ -22,8 +23,8 @@ public abstract class PriorProbabilityEstimator {
     }
 
     public void addMask(String mask) {
-        Long maskCount = maskToFrequency.getOrDefault(mask, 0L);
-        maskToFrequency.put(mask, maskCount + 1);
+        BigDecimal maskCount = maskToFrequency.getOrDefault(mask, BigDecimal.ZERO);
+        maskToFrequency.put(mask, maskCount.add(BigDecimal.ONE));
     }
 
     public abstract PriorProbability computePriorProbability();
@@ -48,5 +49,9 @@ public abstract class PriorProbabilityEstimator {
         }
         object.put("groups", groupMembers);
         return object;
+    }
+
+    public void setMaskToFrequency(Map<String, BigDecimal> maskToFrequency) {
+        this.maskToFrequency = maskToFrequency;
     }
 }

@@ -1,6 +1,7 @@
 package cz.crcs.sekan.rsakeysanalysis.classification.tests;
 
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.Classification;
+import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.ClassificationConfiguration;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori.PriorProbability;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.exception.DataSetException;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationRow;
@@ -18,7 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.function.BiFunction;
 
 /**
  * @author xnemec1
@@ -26,21 +26,11 @@ import java.util.function.BiFunction;
  */
 public class ClassificationSuccessTest {
 
-    private static SecureRandom configureRandom(Classification.BuildHelper.Configuration configuration) throws NoSuchAlgorithmException {
-        if (configuration.rngSeed == null) {
-            SecureRandom seedingRandom = SecureRandom.getInstance("SHA1PRNG");
-            configuration.rngSeed = seedingRandom.nextLong();
-        }
-        SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
-        random.setSeed(configuration.rngSeed);
-        return random;
-    }
-
-    public static void runFromConfiguration(Classification.BuildHelper.Configuration configuration)
+    public static void runFromConfiguration(ClassificationConfiguration configuration)
             throws IOException, DataSetException, NoSuchAlgorithmException {
         Classification.Builder builder = Classification.BuildHelper.prepareBuilder(configuration, null);
 
-        SecureRandom random = configureRandom(configuration);
+        SecureRandom random = configuration.configureRandom();
 
         builder.setDataSetIterator(SimulatedDataSetIterator.fromClassificationTable(configuration.classificationTable,
                 configuration.priorProbability, configuration.keyCount, random));
@@ -51,8 +41,8 @@ public class ClassificationSuccessTest {
         builder.build().classify();
     }
 
-    public static void groupSuccess(Classification.BuildHelper.Configuration originalConfiguration) throws NoSuchAlgorithmException, IOException, DataSetException {
-        SecureRandom random = configureRandom(originalConfiguration);
+    public static void groupSuccess(ClassificationConfiguration originalConfiguration) throws NoSuchAlgorithmException, IOException, DataSetException {
+        SecureRandom random = originalConfiguration.configureRandom();
 
         Map<String, ClassificationSuccessStatistic> groupNameToStatistic = new TreeMap<>();
 
@@ -61,7 +51,7 @@ public class ClassificationSuccessTest {
         DecimalFormat formatter = null;
 
         for (String groupName : groupNames) {
-            Classification.BuildHelper.Configuration configuration = originalConfiguration.deepCopy();
+            ClassificationConfiguration configuration = originalConfiguration.deepCopy();
 
             Classification.Builder builder = Classification.BuildHelper.prepareBuilder(configuration, null);
             PriorProbability onlyOneGroup = new PriorProbability();
@@ -88,7 +78,7 @@ public class ClassificationSuccessTest {
                 originalConfiguration.outputFolderPath, originalConfiguration.rngSeed, formatter);
     }
 
-    public static void theoreticalSuccess(Classification.BuildHelper.Configuration configuration) {
+    public static void theoreticalSuccess(ClassificationConfiguration configuration) {
         ClassificationTable table = configuration.classificationTable;
         // all groups must be normalized to the same sum
 
