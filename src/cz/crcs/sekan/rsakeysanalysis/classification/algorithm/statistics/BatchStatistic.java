@@ -139,4 +139,8 @@ public class BatchStatistic {
     public boolean isPositive() {
         return ClassificationType.POSITIVE.equals(classificationType);
     }
+
+    public ClassificationRow getCommonClassification() {
+        return commonClassification;
+    }
 }

@@ -1,5 +1,6 @@
 package cz.crcs.sekan.rsakeysanalysis.classification.algorithm.statistics;
 
+import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori.PriorProbability;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori.PriorProbabilityEstimator;
 import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKeyStub;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationContainer;
@@ -29,6 +30,8 @@ public class BatchesStatisticsAggregator implements StatisticsAggregator {
     private Map<Long, BatchStatistic> positiveDuplicateBatches;
     private Map<Long, BatchStatistic> negativeUniqueBatches;
     private Map<Long, BatchStatistic> negativeDuplicateBatches;
+
+    private PriorProbability priorProbability;
 
     public BatchesStatisticsAggregator(List<String> groupNames, String pathToFolderWithResults) {
         this.groupNames = groupNames;
@@ -78,6 +81,8 @@ public class BatchesStatisticsAggregator implements StatisticsAggregator {
         allBatchMaps.add(positiveDuplicateBatches);
         allBatchMaps.add(negativeDuplicateBatches);
 
+        if (pathToFolderWithResults == null) return;
+
         try (ExtendedWriter writer = new ExtendedWriter(new File(pathToFolderWithResults, "individual_statistics.csv"))) {
             writer.writeln(BatchStatistic.rowStatisticHeader(groupNames, SEPARATOR));
             for (Map<Long, BatchStatistic> map : allBatchMaps) {
@@ -108,6 +113,9 @@ public class BatchesStatisticsAggregator implements StatisticsAggregator {
 
     @Override
     public void savePriorProbabilitySummary(PriorProbabilityEstimator estimator) {
+        priorProbability = estimator.computePriorProbability();
+        if (pathToFolderWithResults == null) return;
+
         ExtendedWriter writer = null;
         try {
             writer = new ExtendedWriter(new File(pathToFolderWithResults, "prior_probability.json"));
@@ -116,5 +124,13 @@ public class BatchesStatisticsAggregator implements StatisticsAggregator {
         } catch (IOException e) {
             System.err.println("Error while writing prior probability results.");
         }
+    }
+
+    public Map<Long, BatchStatistic> getPositiveUniqueBatches() {
+        return positiveUniqueBatches;
+    }
+
+    public PriorProbability getPriorProbability() {
+        return priorProbability;
     }
 }

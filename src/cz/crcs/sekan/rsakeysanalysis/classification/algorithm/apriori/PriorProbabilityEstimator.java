@@ -22,6 +22,11 @@ public abstract class PriorProbabilityEstimator {
         maskToFrequency = new TreeMap<>();
     }
 
+    protected PriorProbabilityEstimator() {
+        maskToFrequency = new TreeMap<>();
+        table = null;
+    }
+
     public void addMask(String mask) {
         BigDecimal maskCount = maskToFrequency.getOrDefault(mask, BigDecimal.ZERO);
         maskToFrequency.put(mask, maskCount.add(BigDecimal.ONE));

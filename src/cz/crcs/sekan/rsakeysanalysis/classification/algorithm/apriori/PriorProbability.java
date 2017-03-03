@@ -2,6 +2,7 @@ package cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori;
 
 import cz.crcs.sekan.rsakeysanalysis.classification.tests.util.ClassificationSuccessStatisticsAggregator;
 import org.json.simple.JSONObject;
+import sun.awt.AWTAccessor;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
@@ -19,6 +20,12 @@ public class PriorProbability extends TreeMap<String, BigDecimal> {
 
     public BigDecimal getGroupProbability(String groupName) {
         return get(groupName);
+    }
+
+    public static PriorProbability fromMap(Map<String, BigDecimal> map) {
+        PriorProbability probability = new PriorProbability();
+        probability.putAll(map);
+        return probability;
     }
 
     public JSONObject toJSON() {
@@ -81,6 +88,25 @@ public class PriorProbability extends TreeMap<String, BigDecimal> {
         return priorProbability.normalized();
     }
 
+    public PriorProbability scale(BigDecimal scale) {
+        PriorProbability scaled = new PriorProbability();
+        for (Map.Entry<String, BigDecimal> entry : entrySet()) {
+            scaled.put(entry.getKey(), entry.getValue().multiply(scale));
+        }
+        return scaled;
+    }
+
+    public PriorProbability sum(PriorProbability other) {
+        PriorProbability summed = new PriorProbability();
+        if (!other.keySet().containsAll(keySet()) || !keySet().containsAll(other.keySet())) {
+            throw new IllegalArgumentException("Probability contain different sources");
+        }
+        for (Map.Entry<String, BigDecimal> entry : entrySet()) {
+            summed.put(entry.getKey(), entry.getValue().add(other.getOrDefault(entry.getKey(), BigDecimal.ZERO)));
+        }
+        return summed;
+    }
+
     public BigDecimal distance(PriorProbability other) {
         BigDecimal distance = BigDecimal.ZERO;
         if (!other.keySet().containsAll(this.keySet())) {
@@ -90,8 +116,12 @@ public class PriorProbability extends TreeMap<String, BigDecimal> {
         PriorProbability otherNormalized = other.normalized();
         PriorProbability thisNormalized = normalized();
         for (String group : thisNormalized.keySet()) {
+            BigDecimal divisor = thisNormalized.get(group);
+            if (BigDecimal.ZERO.compareTo(divisor) > -1) {
+                divisor = BigDecimal.ONE.divide(BigDecimal.valueOf(10000), BIG_DECIMAL_SCALE, BigDecimal.ROUND_HALF_EVEN);
+            }
             distance = distance.add(((otherNormalized.get(group).subtract(thisNormalized.get(group)))
-                    .divide(thisNormalized.get(group), BIG_DECIMAL_SCALE, BigDecimal.ROUND_HALF_EVEN)).abs());
+                    .divide(divisor, BIG_DECIMAL_SCALE, BigDecimal.ROUND_HALF_EVEN)).abs());
         }
         return distance;
     }

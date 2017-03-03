@@ -129,7 +129,8 @@ public class Main {
                     // aprioriTest(args[++i], args[++i])
                     ClassificationConfiguration config = ClassificationConfiguration.fromCommandLineOptions(args, 2, args[++i], null);
                     i = config.consumedArguments;
-                    AprioriTest.testEstimatePrecision(config);
+                    //AprioriTest.testEstimatePrecision(config);
+                    AprioriTest.testPriorInfluence(config);
                     break;
                 default:
                     System.out.println("Undefined parameter '" + args[i] + "'");
