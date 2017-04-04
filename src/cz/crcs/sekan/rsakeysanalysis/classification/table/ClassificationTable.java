@@ -164,9 +164,10 @@ public class ClassificationTable {
         }
         ClassificationTable copyTable = new ClassificationTable();
         copyTable.table = newTable;
-        copyTable.groups = groups;
+        copyTable.groups = new TreeMap<>();
+        copyTable.groups.putAll(groups);
         copyTable.identificationGenerator = identificationGenerator;
-        copyTable.priorProbability = priorProbability;
+        copyTable.priorProbability = priorProbability.makeCopy();
         return copyTable;
     }
 

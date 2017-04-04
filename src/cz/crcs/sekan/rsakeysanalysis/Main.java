@@ -13,10 +13,7 @@ import cz.crcs.sekan.rsakeysanalysis.classification.table.RawTable;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.makefile.Makefile;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.transformation.exception.TransformationNotFoundException;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.transformation.exception.WrongTransformationFormatException;
-import cz.crcs.sekan.rsakeysanalysis.classification.tests.AprioriTest;
-import cz.crcs.sekan.rsakeysanalysis.classification.tests.ClassificationSuccessTest;
-import cz.crcs.sekan.rsakeysanalysis.classification.tests.Misclassification;
-import cz.crcs.sekan.rsakeysanalysis.classification.tests.ModulusFactors;
+import cz.crcs.sekan.rsakeysanalysis.classification.tests.*;
 import cz.crcs.sekan.rsakeysanalysis.tools.*;
 import org.json.simple.parser.ParseException;
 
@@ -27,6 +24,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 public class Main {
 
@@ -99,8 +97,18 @@ public class Main {
                     break;
                 case "-rd":
                 case "--removeDuplicity":
-                    //RemoveDuplicity.run(args[++i], args[++i]);
-                    DuplicityRemover.removeDuplicities(args[++i], args[++i], new JsonDataSetFormatter());
+                    ClassificationConfiguration configuration = ClassificationConfiguration.fromCommandLineOptions(args, 1);
+                    DuplicityRemover.removeDuplicitiesBatch(configuration.outputFolderPath, new JsonDataSetFormatter(),
+                            configuration.inputPaths.toArray(new String[configuration.inputPaths.size()]));
+                    i = configuration.consumedArguments;
+                    break;
+                case "-ps":
+                case "--presort":
+                    ClassificationConfiguration sortConfig = ClassificationConfiguration.fromCommandLineOptions(args, 1);
+                    int prefixBits = sortConfig.keyCount + 1;
+                    DatasetSorter.preSortDataset(prefixBits, sortConfig.outputFolderPath, sortConfig.tempFolderPath,
+                            sortConfig.inputPaths);
+                    i = sortConfig.consumedArguments;
                     break;
                 case "-nc":
                 case "--nc":
@@ -127,10 +135,12 @@ public class Main {
                 case "-a":
                 case "--apriori":
                     // aprioriTest(args[++i], args[++i])
-                    ClassificationConfiguration config = ClassificationConfiguration.fromCommandLineOptions(args, 2, args[++i], null);
+                    ClassificationConfiguration config = ClassificationConfiguration.fromCommandLineOptions(args, 1);
                     i = config.consumedArguments;
                     //AprioriTest.testEstimatePrecision(config);
-                    AprioriTest.testPriorInfluence(config);
+                    //AprioriTest.testPriorInfluence(config);
+                    AprioriTest.testPriorEstimation(config);
+                    //SimulationsTest.testSimulators(config);
                     break;
                 default:
                     System.out.println("Undefined parameter '" + args[i] + "'");
@@ -181,24 +191,62 @@ public class Main {
                 "                        in    = path to txt file\n" +
                 "                                Each line of file contains one factor (hex).\n" +
                 "  -c   OPTIONS         Classify keys from key set.\n" +
-                "                        OPTIONS = table in out " + ClassificationConfiguration.BATCH_TYPE_SWITCH + " batch "
+                "                        OPTIONS = "
+                + ClassificationConfiguration.CLASSIFICATION_TABLE_SWITCH + " table "
+                + ClassificationConfiguration.INPUTS_SWITCH + " in... "
+                + ClassificationConfiguration.OUTPUT_SWITCH + " outdir "
+                + ClassificationConfiguration.BATCH_TYPE_SWITCH + " batch "
                 + ClassificationConfiguration.PRIOR_TYPE_SWITCH + " prior "
                 + ClassificationConfiguration.EXPORT_TYPE_SWITCH + " export "
                 + ClassificationConfiguration.MEMORY_TYPE_SWITCH + " temp \n" +
-                "                         table  = path to classification table file\n" +
-                "                         in     = path to key set\n" +
-                "                         out    = path to folder for storing results\n" +
-                "                         batch  = " + Classification.BatchType.SOURCE + "|" + Classification.BatchType.PRIMES + "|" + Classification.BatchType.NONE + " -- how to batch keys\n" +
-                "                         prior  = " + Classification.PriorType.ESTIMATE + "|" + Classification.PriorType.UNIFORM + "|" + Classification.PriorType.TABLE + " -- prior probability\n" +
-                "                         export = " + Classification.ExportType.NONE + "|" + Classification.ExportType.JSON + "|" + Classification.ExportType.CSV + " -- annotated dataset export format\n" +
-                "                         temp   = " + Classification.MemoryType.NONE + "|" + Classification.MemoryType.DISK + "|" + Classification.MemoryType.MEMORY + " -- only for export\n" +
-                "  -rd  in    out       Remove duplicity from key set.\n" +
-                "                        in    = path to key set\n" +
-                "                        out   = path to key set\n" +
+                "                         " + ClassificationConfiguration.CLASSIFICATION_TABLE_SWITCH +
+                " table  = path to classification table file\n" +
+                "                         " + ClassificationConfiguration.INPUTS_SWITCH +
+                " in     = path(s) to data set(s)\n" +
+                "                         " + ClassificationConfiguration.OUTPUT_SWITCH +
+                " out    = path to folder for storing results\n" +
+                "                         " + ClassificationConfiguration.BATCH_TYPE_SWITCH +
+                " batch  = " + Classification.BatchType.SOURCE +
+                "|" + Classification.BatchType.PRIMES +
+                "|" + Classification.BatchType.NONE + " -- how to batch keys\n" +
+                "                         " + ClassificationConfiguration.PRIOR_TYPE_SWITCH +
+                " prior  = " + Classification.PriorType.ESTIMATE +
+                "|" + Classification.PriorType.UNIFORM + "|" + Classification.PriorType.TABLE +
+                " -- prior probability\n" +
+                "                         " + ClassificationConfiguration.EXPORT_TYPE_SWITCH +
+                " export = " + Classification.ExportType.NONE +
+                "|" + Classification.ExportType.JSON + "|" + Classification.ExportType.CSV +
+                " -- annotated dataset export format\n" +
+                "                         " + ClassificationConfiguration.MEMORY_TYPE_SWITCH +
+                " temp   = " + Classification.MemoryType.NONE +
+                "|" + Classification.MemoryType.DISK + "|" + Classification.MemoryType.MEMORY +
+                " -- temporary memory handling - only for export\n" +
+                "  -ps OPTIONS          Partially sort the dataset to make duplicity removal easier.\n" +
+                "                        OPTIONS = "
+                + ClassificationConfiguration.INPUTS_SWITCH + " in... "
+                + ClassificationConfiguration.OUTPUT_SWITCH + " outdir "
+                + ClassificationConfiguration.TEMP_SWITCH + " temp "
+                + ClassificationConfiguration.KEY_COUNT_SWITCH + " prefix_bits \n" +
+                "                        " + ClassificationConfiguration.INPUTS_SWITCH +
+                " in... = paths to datasets\n" +
+                "                        " + ClassificationConfiguration.OUTPUT_SWITCH +
+                " out   = path to output directory for presorted dataset\n" +
+                "                        " + ClassificationConfiguration.TEMP_SWITCH +
+                " temp  = directory for temporary files\n" +
+                "                        " + ClassificationConfiguration.KEY_COUNT_SWITCH +
+                " bits  = number of prefix bits (makes 2^b temporary files)\n" +
+                "  -rd " + ClassificationConfiguration.INPUTS_SWITCH + " ... "
+                + ClassificationConfiguration.OUTPUT_SWITCH + " out    Remove duplicity from key set.\n" +
+                "                        " + ClassificationConfiguration.OUTPUT_SWITCH +
+                " outdir = directory for unique datasets\n" +
+                "                        " + ClassificationConfiguration.INPUTS_SWITCH +
+                " in...  = paths to key sets (processed individually)\n" +
                 "  -a   table OPTIONS   Test a priori probability estimation.\n" +
                 "                        table = path to classification table file\n" +
-                "                        " + ClassificationConfiguration.KEY_COUNT_SWITCH + " runs  = number of random estimations\n" +
-                "                        " + ClassificationConfiguration.RNG_SEED_SWITCH + " seed  = optional seed for RNG\n" +
+                "                        " + ClassificationConfiguration.KEY_COUNT_SWITCH +
+                " runs  = number of random estimations\n" +
+                "                        " + ClassificationConfiguration.RNG_SEED_SWITCH +
+                " seed  = optional seed for RNG\n" +
                 "  -nc  table           Set classification table for not classify some keys.\n" +
                 "                        table = path to classification table file\n" +
                 "  -h                   Show this help.\n" +
@@ -297,26 +345,24 @@ public class Main {
     private static int classifyDataSet(String[] args)
             throws ClassificationException, IOException, ParseException, WrongTransformationFormatException, TransformationNotFoundException {
 
-        String tableFilePath = args[0];
-        String datasetFilePath = args[1];
-        String outputFolderPath = args[2];
+        Map<String, PriorProbabilityEstimator> dataSetNameToEstimator = new TreeMap<>();
 
-        ClassificationConfiguration configuration = ClassificationConfiguration.fromCommandLineOptions(args, 3, tableFilePath, outputFolderPath);
-        Classification.Builder builder = Classification.BuildHelper.prepareBuilder(configuration, datasetFilePath);
+        ClassificationConfiguration configuration = ClassificationConfiguration.fromCommandLineOptions(args, 0);
+        for (String datasetFilePath : configuration.inputPaths) {
+            Classification.Builder builder = Classification.BuildHelper.prepareBuilder(configuration.deepCopy(), datasetFilePath);
 
-        builder.build().classify();
+            Classification classification =  builder.build();
+            PriorProbabilityEstimator priorProbabilityEstimator = classification.classify();
+            dataSetNameToEstimator.put(classification.getDataSetName(), priorProbabilityEstimator);
+        }
 
         return configuration.consumedArguments;
     }
 
     private static int classificationSuccess(String[] args)
             throws DataSetException, WrongTransformationFormatException, TransformationNotFoundException, ParseException, IOException, NoSuchAlgorithmException {
-        String tableFilePath = args[0];
-        String outputFolderPath = args[1];
-        int offset = 2;
 
-        ClassificationConfiguration configuration =
-                ClassificationConfiguration.fromCommandLineOptions(args, offset, tableFilePath, outputFolderPath);
+        ClassificationConfiguration configuration = ClassificationConfiguration.fromCommandLineOptions(args, 0);
         //ClassificationSuccessTest.runFromConfiguration(configuration);
         ClassificationSuccessTest.groupSuccess(configuration);
         //ClassificationSuccessTest.theoreticalSuccess(configuration);

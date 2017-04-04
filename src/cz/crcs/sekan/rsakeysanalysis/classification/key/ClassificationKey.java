@@ -9,6 +9,8 @@ import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.regex.Matcher;
@@ -100,15 +102,21 @@ public class ClassificationKey {
         return !json.contains("\"modulus\"");
     }
 
-    private static final BigInteger mod = BigInteger.ZERO.setBit(128);
-    // shorten the modulus before saving it to conserve memory; this could use a hash function, but low 128 bits differ
-    private static BigInteger shortenModulus(BigInteger modulus) {
-        return modulus.mod(mod);
+    public static BigInteger shortenModulus(BigInteger modulus) {
+        if (modulus == null) return null;
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte hash[] = digest.digest(modulus.toByteArray());
+            return new BigInteger(hash);
+        } catch (NoSuchAlgorithmException e) {
+            System.err.println("SHA-256 not available");
+            throw new RuntimeException(e);
+        }
     }
 
     private static final Pattern patternModulus = Pattern.compile("\"(n|modulus)\" *: *\"(0x|0X)?([a-zA-Z0-9]+)\"");
 
-    public static BigInteger getShortenedModulusFromJSON(String json) {
+    public static BigInteger getModulusFromJSON(String json) {
         if (json == null) return null;
         Matcher m = patternModulus.matcher(json);
         if (m.find()) {
@@ -121,9 +129,13 @@ public class ClassificationKey {
                 System.err.println("No modulus present in json");
                 return null;
             }
-            return shortenModulus(new BigInteger(matched, 16));
+            return new BigInteger(matched, 16);
         }
         return null;
+    }
+
+    public static BigInteger getShortenedModulusFromJSON(String json) {
+        return shortenModulus(getModulusFromJSON(json));
     }
 
     public BigInteger getShortenedModulus() {
@@ -260,6 +272,105 @@ public class ClassificationKey {
         }
     }
 
+    public enum KeyMergeStrategy {
+        COLLAPSE_INFO,
+        APPEND_INFO,
+        IGNORE_INFO
+    }
+
+    /**
+     * Merge otherKey into this key
+     * @param otherKey
+     * @param keyMergeStrategy COLLAPSE - put info into a set of unique elements - slow; APPEND - create an array of infos; IGNORE - do not process info
+     * @throws WrongKeyException
+     */
+    public void mergeNoCopy(ClassificationKey otherKey, KeyMergeStrategy keyMergeStrategy) throws WrongKeyException {
+        if (!otherKey.getRsaKey().getModulus().equals(this.getRsaKey().getModulus())) {
+            throw new WrongKeyException("Cannot merge two different keys.");
+        }
+        this.setCount(otherKey.getCount() + this.getCount());
+        //If other key is ordered => save order to new key
+        if (otherKey.ordered && !this.ordered) {
+            this.ordered = true;
+
+            if (otherKey.getRsaKey().getP().equals(this.getRsaKey().getQ()) &&
+                    otherKey.getRsaKey().getQ().equals(this.getRsaKey().getP())) {
+                BigInteger tempPrime;
+                tempPrime = this.getRsaKey().getP();
+                this.getRsaKey().setP(this.getRsaKey().getQ());
+                this.getRsaKey().setQ(tempPrime);
+                List<ClassificationFactor> tmp = this.pmoFactors;
+                this.pmoFactors = this.qmoFactors;
+                this.qmoFactors = tmp;
+                tmp = this.ppoFactors;
+                this.ppoFactors = this.qpoFactors;
+                this.qpoFactors = tmp;
+            }
+        }
+
+        if (this.pmoFactors == null && otherKey.pmoFactors != null) {
+            this.pmoFactors = otherKey.pmoFactors;
+        }
+        if (this.ppoFactors == null && otherKey.ppoFactors != null) {
+            this.ppoFactors = otherKey.ppoFactors;
+        }
+        if (this.qmoFactors == null && otherKey.qmoFactors != null) {
+            this.qmoFactors = otherKey.qmoFactors;
+        }
+        if (this.qpoFactors == null && otherKey.qpoFactors != null) {
+            this.qpoFactors = otherKey.qpoFactors;
+        }
+
+        if (keyMergeStrategy == KeyMergeStrategy.IGNORE_INFO) {
+            this.info = null;
+        } else if (otherKey.getInfo() != null || this.getInfo() != null) {
+            if (this.info == null) {
+                this.info = new JSONObject(otherKey.info);
+            } else if (otherKey.info != null) {
+                if (keyMergeStrategy == KeyMergeStrategy.COLLAPSE_INFO) {
+                    JSONObject infoA = this.getInfo();
+                    JSONObject infoB = otherKey.getInfo();
+                    for (Object obj : infoB.keySet()) {
+                        Object infoPartA = infoA.get(obj);
+                        Object infoPartB = infoB.get(obj);
+                        List<Object> list = new LinkedList<>();
+                        if (infoPartA instanceof Collection) {
+                            list.addAll((Collection<?>) infoPartA);
+                        } else {
+                            list.add(infoPartA);
+                        }
+                        if (infoPartB instanceof Collection) {
+                            list.addAll((Collection<?>) infoPartB);
+                        } else {
+                            list.add(infoPartB);
+                        }
+                        JSONArray array = new JSONArray();
+                        array.addAll(list);
+                        infoA.remove(obj);
+                        infoA.put(obj, array);
+                    }
+                    this.setInfo(infoA);
+                } else if (keyMergeStrategy == KeyMergeStrategy.APPEND_INFO) {
+                    Object combinedInfo = this.info.get("combined_info");
+                    if (combinedInfo == null) {
+                        combinedInfo = new JSONArray();
+                        ((JSONArray) combinedInfo).add(this.info);
+                    }
+                    ((JSONArray) combinedInfo).add(otherKey.info);
+                    this.info = new JSONObject();
+                    this.info.put("combined_info", combinedInfo);
+                }
+            }
+        }
+        if (otherKey.getSource() != null) {
+            if (this.getSource() != null) {
+                this.source.addAll(otherKey.getSource());
+            } else {
+                this.source = new TreeSet<>(otherKey.getSource());
+            }
+        }
+    }
+
     /**
      * Function for merge two keys if they have same rsa key
      * @param otherKey other key to merge with
@@ -334,7 +445,7 @@ public class ClassificationKey {
             key.setInfo(infoA);
         }
         if (key.getSource() != null || this.getSource() != null) {
-            Set<String> sources = new CopyOnWriteArraySet<>();
+            Set<String> sources = new TreeSet<>(); //new CopyOnWriteArraySet<>();
             if (this.getSource() != null) sources.addAll(this.getSource());
             if (key.getSource() != null) sources.addAll(key.getSource());
             key.setSource(sources);

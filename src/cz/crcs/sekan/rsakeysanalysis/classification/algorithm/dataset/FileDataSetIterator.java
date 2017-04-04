@@ -16,9 +16,12 @@ public class FileDataSetIterator implements DataSetIterator {
 
     private FileIterator fileIterator;
 
+    private String datasetName;
+
     public FileDataSetIterator(String pathToDataset) throws DataSetException {
         this.fileIterator = new FileIterator(pathToDataset);
         this.fileIterator.rewind();
+        this.datasetName = new File(pathToDataset).getName();
     }
 
     @Override
@@ -29,7 +32,12 @@ public class FileDataSetIterator implements DataSetIterator {
     @Override
     public ClassificationKey next() {
         String line = fileIterator.next();
+
         if (line == null) return null;
+        if (line.length() > 16*1024*1024) {
+            System.err.println(String.format("WARNING: skipping a long line (%d characters): %s ...", line.length(), line.substring(0, 128)));
+            return next();
+        }
 
         ClassificationKey nextKey;
 
@@ -46,5 +54,10 @@ public class FileDataSetIterator implements DataSetIterator {
     @Override
     public void close() {
         fileIterator.close();
+    }
+
+    @Override
+    public String getDataSetName() {
+        return datasetName;
     }
 }

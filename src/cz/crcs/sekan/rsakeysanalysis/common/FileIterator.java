@@ -21,11 +21,15 @@ public class FileIterator implements Iterator<String> {
 
     private String nextLine;
 
-    private String pathToFile;
+    private File inputFile;
+
+    public FileIterator(File inputFile) throws DataSetException {
+        this.inputFile = inputFile;
+        rewind();
+    }
 
     public FileIterator(String pathToFile) throws DataSetException {
-        this.pathToFile = pathToFile;
-        rewind();
+        this(new File(pathToFile));
     }
 
     @Override
@@ -60,7 +64,7 @@ public class FileIterator implements Iterator<String> {
         }
 
         try {
-            reader = new BufferedReader(new FileReader(new File(pathToFile)));
+            reader = new BufferedReader(new FileReader(inputFile));
             prepareNextLine();
         } catch (IOException e) {
             throw new DataSetException(e);

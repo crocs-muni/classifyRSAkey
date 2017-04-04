@@ -43,6 +43,30 @@ public class DuplicityRemover {
         }
     }
 
+    public static void removeDuplicitiesBatch(String outputDirPath, DataSetFormatter formatter, String... filePaths) throws DataSetException {
+        File outputDir = new File(outputDirPath);
+        if (outputDir.exists()) {
+            if (!outputDir.isDirectory()) {
+                System.err.println("Output path exists, but is not a directory");
+                throw new IllegalArgumentException("Output path exists, but is not a directory");
+            }
+            if (outputDir.getAbsolutePath().equals(new File(filePaths[0]).getParentFile().getAbsolutePath())) {
+                System.err.println("Output path points to input pahts, this would overwrite the original files");
+                throw new IllegalArgumentException("Output path points to input pahts, this would overwrite the original files");
+            }
+        } else {
+            if (!outputDir.mkdir()) {
+                System.err.println("Cannot create output directory");
+                throw new IllegalArgumentException("Cannot create output directory");
+            }
+        }
+
+        for (String filePath : filePaths) {
+            System.out.println(String.format("Removing duplicities from file: %s", filePath));
+            removeDuplicities(filePath, new File(outputDirPath, new File(filePath).getName()).getAbsolutePath(), formatter);
+        }
+    }
+
     public static void removeDuplicities(String filePath, String outputFilePath, DataSetFormatter formatter) throws DataSetException {
         Integer allKeys = 0;
 
@@ -83,21 +107,26 @@ public class DuplicityRemover {
                 }
                 Integer leftInDataset = counter.decreaseDuplicityCount(shortModulus);
 
-                ClassificationKey resultingKey = mergedKeys.compute(shortModulus, (shortenedModulus, mergedKey) -> {
+                ClassificationKey resultingKey = mergedKeys.get(shortModulus);
+                if (resultingKey == null) {
+                    resultingKey = readKey;
+                } else {
                     try {
-                        return mergedKey == null ? readKey : mergedKey.mergeWith(readKey);
+                        resultingKey.mergeNoCopy(readKey, ClassificationKey.KeyMergeStrategy.APPEND_INFO);
                     } catch (WrongKeyException e) {
                         System.err.println("Could not merge two supposedly same keys: " + shortModulus.toString(16)
                                 + " new: " + readKey.getRsaKey().getModulus().toString(16)
-                                + " old: " + mergedKey.getRsaKey().getModulus().toString(16));
-                        return mergedKey;
+                                + " old: " + resultingKey.getRsaKey().getModulus().toString(16));
+                        resultingKey = readKey;
                     }
-                });
+                }
 
                 if (leftInDataset <= 0) {
                     datasetWriter.writeln(formatter.originalKeyToLine(resultingKey));
                     mergedKeys.remove(shortModulus);
                     ++printed;
+                } else {
+                    mergedKeys.put(shortModulus, resultingKey);
                 }
 
                 if (++read % printFrequency == 0) {

@@ -11,4 +11,6 @@ import java.util.Iterator;
  */
 public interface DataSetIterator extends Iterator<ClassificationKey> {
     public void close();
+
+    public String getDataSetName();
 }
