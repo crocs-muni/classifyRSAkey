@@ -6,13 +6,17 @@ import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.exception.DataSetE
 import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKey;
 import cz.crcs.sekan.rsakeysanalysis.common.ExtendedWriter;
 import cz.crcs.sekan.rsakeysanalysis.common.FileIterator;
+import cz.crcs.sekan.rsakeysanalysis.common.JSONObjectMerger;
+import cz.crcs.sekan.rsakeysanalysis.common.JSONPropertyExtractor;
 import cz.crcs.sekan.rsakeysanalysis.common.exception.WrongKeyException;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author xnemec1
@@ -43,14 +47,14 @@ public class DuplicityRemover {
         }
     }
 
-    public static void removeDuplicitiesBatch(String outputDirPath, DataSetFormatter formatter, String... filePaths) throws DataSetException {
+    public static void checkPaths(String outputDirPath, String inputPath) {
         File outputDir = new File(outputDirPath);
         if (outputDir.exists()) {
             if (!outputDir.isDirectory()) {
                 System.err.println("Output path exists, but is not a directory");
                 throw new IllegalArgumentException("Output path exists, but is not a directory");
             }
-            if (outputDir.getAbsolutePath().equals(new File(filePaths[0]).getParentFile().getAbsolutePath())) {
+            if (outputDir.getAbsolutePath().equals(new File(inputPath).getParentFile().getAbsolutePath())) {
                 System.err.println("Output path points to input pahts, this would overwrite the original files");
                 throw new IllegalArgumentException("Output path points to input pahts, this would overwrite the original files");
             }
@@ -60,14 +64,28 @@ public class DuplicityRemover {
                 throw new IllegalArgumentException("Cannot create output directory");
             }
         }
+    }
+
+    public static void removeDuplicitiesBatch(String outputDirPath, DataSetFormatter formatter, String... filePaths) throws DataSetException {
+        checkPaths(outputDirPath, filePaths[0]);
 
         for (String filePath : filePaths) {
             System.out.println(String.format("Removing duplicities from file: %s", filePath));
-            removeDuplicities(filePath, new File(outputDirPath, new File(filePath).getName()).getAbsolutePath(), formatter);
+            removeDuplicities(filePath, new File(outputDirPath, new File(filePath).getName()).getAbsolutePath(),
+                    formatter, JSONPropertyExtractor.MODULUS_CASE_INSENSITIVE_EXTRACTOR);
         }
     }
 
-    public static void removeDuplicities(String filePath, String outputFilePath, DataSetFormatter formatter) throws DataSetException {
+    /**
+     *
+     * @param filePath
+     * @param outputFilePath
+     * @param formatter TODO: ignored, all output is JSON
+     * @param jsonPropertyExtractor
+     * @throws DataSetException
+     */
+    public static void removeDuplicities(String filePath, String outputFilePath, DataSetFormatter formatter,
+                                         JSONPropertyExtractor jsonPropertyExtractor) throws DataSetException {
         Integer allKeys = 0;
 
         // first pass -- find number of duplicities
@@ -75,64 +93,71 @@ public class DuplicityRemover {
         DuplicityCounter counter = new DuplicityCounter();
         while (file.hasNext()) {
             String line = file.next();
-            BigInteger modulus = ClassificationKey.getShortenedModulusFromJSON(line);
-            if (modulus == null) {
-                System.err.println("Could not extract modulus from line:");
+            BigInteger propertyHash = jsonPropertyExtractor.extractHashOfProperty(line);
+            if (propertyHash == null) {
+                System.err.println("Could not extract property hash from line:");
                 System.err.println(line);
                 continue;
             }
-            counter.add(modulus);
+            counter.add(propertyHash);
             allKeys++;
         }
 
-        System.out.println(String.format("Dataset contains %d keys, with %d unique keys", allKeys, counter.keyCount()));
+        System.out.println(String.format("Dataset contains %d items, with %d unique items", allKeys, counter.keyCount()));
 
         // second pass -- directly output unique keys; only hold keys to be merged until all have been seen
-        Map<BigInteger, ClassificationKey> mergedKeys = new HashMap<>();
+        Map<BigInteger, List<JSONObject>> mergedKeys = new HashMap<>();
 
-        FileDataSetIterator dataSetIterator = new FileDataSetIterator(filePath);
+        FileIterator jsonIterator = new FileIterator(filePath);
 
         try (ExtendedWriter datasetWriter = new ExtendedWriter(new File(outputFilePath))) {
             long time = System.currentTimeMillis();
             Long read = 0L;
             Long printFrequency = 100000L;
             Long printed = 0L;
-            while (dataSetIterator.hasNext()) {
-                ClassificationKey readKey = dataSetIterator.next();
-                BigInteger shortModulus = readKey.getShortenedModulus();
-                if (shortModulus == null) {
-                    System.err.println("Could not extract modulus from key:");
-                    System.err.println(readKey.toJSON());
+            JSONParser parser = new JSONParser();
+            while (jsonIterator.hasNext()) {
+                JSONObject readKey;
+                String jsonLine;
+                try {
+                    jsonLine = jsonIterator.next();
+                    readKey = (JSONObject) parser.parse(jsonLine);
+                } catch (ParseException e) {
+                    System.err.println("Failed to parse JSON line " + e.toString());
                     continue;
                 }
-                Integer leftInDataset = counter.decreaseDuplicityCount(shortModulus);
-
-                ClassificationKey resultingKey = mergedKeys.get(shortModulus);
-                if (resultingKey == null) {
-                    resultingKey = readKey;
-                } else {
-                    try {
-                        resultingKey.mergeNoCopy(readKey, ClassificationKey.KeyMergeStrategy.APPEND_INFO);
-                    } catch (WrongKeyException e) {
-                        System.err.println("Could not merge two supposedly same keys: " + shortModulus.toString(16)
-                                + " new: " + readKey.getRsaKey().getModulus().toString(16)
-                                + " old: " + resultingKey.getRsaKey().getModulus().toString(16));
-                        resultingKey = readKey;
-                    }
+                BigInteger propertyHash = jsonPropertyExtractor.extractHashOfProperty(jsonLine);
+                if (propertyHash == null) {
+                    System.err.println("Could not extract property hash from line:");
+                    System.err.println(jsonLine);
+                    continue;
                 }
+                Integer leftInDataset = counter.decreaseDuplicityCount(propertyHash);
+
+                List<JSONObject> resultingKeys = mergedKeys.get(propertyHash);
+                if (resultingKeys == null) {
+                    resultingKeys = new ArrayList<>(1);
+                }
+                resultingKeys.add(readKey);
 
                 if (leftInDataset <= 0) {
-                    datasetWriter.writeln(formatter.originalKeyToLine(resultingKey));
-                    mergedKeys.remove(shortModulus);
-                    ++printed;
+                    JSONObject mergedKey = JSONObjectMerger.mergeJSONObjects(resultingKeys);
+                    if (mergedKey == null) {
+                        System.err.println("ERROR Could not merge objects");
+                    } else {
+                        datasetWriter.writeln(mergedKey.toJSONString());
+                        mergedKeys.remove(propertyHash);
+                        ++printed;
+                    }
                 } else {
-                    mergedKeys.put(shortModulus, resultingKey);
+                    mergedKeys.put(propertyHash, resultingKeys);
                 }
 
                 if (++read % printFrequency == 0) {
                     long currentTime = System.currentTimeMillis();
                     long elapsedTime = currentTime - time;
-                    System.out.println(String.format("Parsed %d keys (%d output, %d in memory) in %d seconds (%d per second) %d MB memory usage",
+                    System.out.println(String.format(
+                            "Parsed %d keys (%d output, %d in memory) in %d seconds (%d per second) %d MB memory usage",
                             read, printed, mergedKeys.size(), elapsedTime / 1000,
                             printFrequency * 1000 / elapsedTime, Runtime.getRuntime().totalMemory() / 1000000));
                     time = currentTime;
@@ -142,6 +167,56 @@ public class DuplicityRemover {
             System.err.println("Error when writing unique dataset");
             e.printStackTrace();
         }
+    }
+
+    public static void printFirstModulus(String outputDirPath, DataSetFormatter formatter, List<String> filePaths)
+            throws DataSetException {
+        checkPaths(outputDirPath, filePaths.get(0));
+
+        printFirstOccurrence(filePaths, outputDirPath,
+                             formatter, JSONPropertyExtractor.MODULUS_CASE_INSENSITIVE_EXTRACTOR);
+    }
+
+    public static void printFirstHash(String outputDirPath, DataSetFormatter formatter, List<String> filePaths)
+            throws DataSetException {
+        checkPaths(outputDirPath, filePaths.get(0));
+
+        printFirstOccurrence(filePaths, outputDirPath,
+                formatter, JSONPropertyExtractor.FINGERPRINT_CASE_INSENSITIVE_EXTRACTOR);
+    }
+
+    private static void printFirstOccurrence(List<String> filePaths, String outputDirPath, DataSetFormatter formatter,
+                                             JSONPropertyExtractor jsonPropertyExtractor) throws DataSetException {
+        Integer allKeys = 0;
+        Integer printedKeys = 0;
+        DuplicityCounter counter = new DuplicityCounter();
+
+        for (String filePath : filePaths) {
+            File outputFile = new File(outputDirPath, new File(filePath).getName());
+            try (ExtendedWriter datasetWriter = new ExtendedWriter(outputFile)) {
+                FileIterator file = new FileIterator(filePath);
+                while (file.hasNext()) {
+                    String line = file.next();
+                    BigInteger propertyHash = jsonPropertyExtractor.extractHashOfProperty(line);
+                    if (propertyHash == null) {
+                        System.err.println("Could not extract property hash from line:");
+                        System.err.println(line);
+                        continue;
+                    }
+                    Integer newCount = counter.add(propertyHash);
+                    if (newCount == 1) {
+                        datasetWriter.writeln(line);
+                        printedKeys++;
+                    }
+                    allKeys++;
+                }
+            } catch (IOException e) {
+                System.err.println("Error when writing unique dataset");
+                e.printStackTrace();
+            }
+        }
+
+        System.out.println(String.format("Parsed %d, wrote %d", allKeys, printedKeys));
     }
 
 }

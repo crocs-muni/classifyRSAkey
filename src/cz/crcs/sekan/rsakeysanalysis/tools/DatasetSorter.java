@@ -17,6 +17,8 @@ import java.util.*;
  * When removing duplicities, keys must be held in memory until all their versions are processed.
  * It helps to have keys close together, in order to avoid having many open batches at the same time.
  * This presorts the dataset to get keys closer together.
+ * TODO Since we are only interested in duplicate moduli (not similar), hashing makes more sense than raw values,
+ * since values will be distributed more uniformly.
  *
  * @author xnemec1
  * @version 3/7/17.
@@ -78,7 +80,7 @@ public class DatasetSorter {
 
             File inputFile = new File(datasetFilePath);
             if (outDir.equals(inputFile.getParentFile())) {
-                inputFile = new File(inputFile.getParentFile(), "unique_" + inputFile.getName());
+                inputFile = new File(inputFile.getParentFile(), "presorted_" + inputFile.getName());
             }
 
             try (ExtendedWriter fullWriter = new ExtendedWriter(new File(outDir, inputFile.getName()))) {
