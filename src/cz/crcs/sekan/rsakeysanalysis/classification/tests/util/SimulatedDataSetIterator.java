@@ -20,13 +20,13 @@ import java.util.Set;
  * @version 2/27/17.
  */
 public class SimulatedDataSetIterator implements DataSetIterator {
-    private int simulatedKeyCount;
-    private int lastKeyId;
+    private long simulatedKeyCount;
+    private long lastKeyId;
     private Random random;
     private SampleGenerator<ClassificationGroupSimulator> priorProbabilityGenerator;
 
     public static SimulatedDataSetIterator fromClassificationTable(ClassificationTable table, PriorProbability priorProbability,
-                                                                   int maxKeyCount, Random random) {
+                                                                   long maxKeyCount, Random random) {
         List<String> groupNames = new ArrayList<>(table.getGroupsNames());
         List<ClassificationGroupSimulator> groups = new ArrayList<>(groupNames.size());
         List<BigDecimal> groupProbabilities = new ArrayList<>(groupNames.size());
@@ -48,6 +48,11 @@ public class SimulatedDataSetIterator implements DataSetIterator {
     @Override
     public void close() {
         // nothing
+    }
+
+    @Override
+    public String getDataSetName() {
+        return "SimulatedDataSetIterator";
     }
 
     @Override

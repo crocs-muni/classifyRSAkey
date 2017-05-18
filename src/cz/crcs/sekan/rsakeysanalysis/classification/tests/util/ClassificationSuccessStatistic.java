@@ -7,10 +7,7 @@ import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationRow;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * @author xnemec1
@@ -37,8 +34,8 @@ public class ClassificationSuccessStatistic {
         }
         List<BigDecimal> probabilities = new ArrayList<>(maxGuesses);
         BigDecimal sum = BigDecimal.ZERO;
-        for (int guesses = 1; guesses <= maxGuesses; guesses++) {
-            BigDecimal count = guessOrderToCount.getOrDefault(guesses == maxGuesses ? -1 : guesses, BigDecimal.ZERO);
+        for (int guesses = 0; guesses < maxGuesses; guesses++) {
+            BigDecimal count = guessOrderToCount.getOrDefault(guesses + 1 == maxGuesses ? -1 : guesses, BigDecimal.ZERO);
             probabilities.add(count);
             sum = sum.add(count);
         }
@@ -83,5 +80,26 @@ public class ClassificationSuccessStatistic {
             if (--counter > 0) builder.append(separator);
         }
         return builder.toString();
+    }
+
+    public static ClassificationSuccessStatistic weighedAverage(Map<String, ClassificationSuccessStatistic> groupNameToStatistic, PriorProbability weighs, Integer maxGuesses, boolean neverGuessedIsMax) {
+        if (!weighs.keySet().containsAll(groupNameToStatistic.keySet())) {
+            System.err.println(weighs.keySet());
+            System.err.println(groupNameToStatistic.keySet());
+            throw new IllegalArgumentException("Different groups");
+        }
+        PriorProbability normalizedWeighs = weighs.normalized();
+        List<String> groupNames = new ArrayList<>(groupNameToStatistic.keySet());
+        ClassificationSuccessStatistic average = new ClassificationSuccessStatistic();
+
+        for (int guesses = 0; guesses < maxGuesses; guesses++) {
+            int index = guesses + 1 == maxGuesses ? -1 : guesses;
+            BigDecimal sum = BigDecimal.ZERO;
+            for (String group : groupNames) {
+                 sum = sum.add(groupNameToStatistic.get(group).guessOrderToCount.getOrDefault(index, BigDecimal.ZERO).multiply(normalizedWeighs.get(group)));
+            }
+            average.guessOrderToCount.put(index, sum);
+        }
+        return average;
     }
 }

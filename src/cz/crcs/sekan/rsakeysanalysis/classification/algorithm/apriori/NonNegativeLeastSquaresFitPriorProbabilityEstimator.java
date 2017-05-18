@@ -2,6 +2,7 @@ package cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori;
 
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationRow;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationTable;
+import cz.crcs.sekan.rsakeysanalysis.classification.tests.util.DistributionsComparator;
 import edu.rit.numeric.NonNegativeLeastSquares;
 
 import java.math.BigDecimal;
@@ -26,10 +27,12 @@ public class NonNegativeLeastSquaresFitPriorProbabilityEstimator extends PriorPr
 
         double[] observedFrequencies = new double[maskCount];
         double[][] libraryFrequencies = new double[maskCount][groupCount];
+        double sampleSize = 0d;
 
         for (int i = 0; i < allMaskValues.size(); i++) {
             BigDecimal maskFrequency = maskToFrequency.getOrDefault(allMaskValues.get(i), BigDecimal.ZERO);
             observedFrequencies[i] = maskFrequency.doubleValue();
+            sampleSize += maskFrequency.doubleValue();
         }
         observedFrequencies = normalize(observedFrequencies);
 
@@ -78,6 +81,20 @@ public class NonNegativeLeastSquaresFitPriorProbabilityEstimator extends PriorPr
         for (int i = 0; i < groupCount; i++) {
             priorProbability.put(groupNames.get(i), BigDecimal.valueOf(parameters[i]));
         }
+        priorProbability.setErrorMeasure(nnls.normsqr);
+
+        long[] simulatedFrequencies = new long[maskCount];
+        for (int i = 0; i < allMaskValues.size(); i++) {
+            double maskProbability = 0d;
+            for (int j = 0; j < groupNames.size(); j++) {
+                double groupProbability = parameters[j];
+                maskProbability += groupProbability * libraryFrequencies[i][j];
+            }
+            simulatedFrequencies[i] = new Double(maskProbability * sampleSize).longValue();
+        }
+
+        double pValue = DistributionsComparator.compareDistributions(observedFrequencies, simulatedFrequencies);
+        priorProbability.setDistributionFitPValue(pValue);
 
         return priorProbability;
     }

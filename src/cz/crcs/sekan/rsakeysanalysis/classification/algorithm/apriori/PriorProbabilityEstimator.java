@@ -4,7 +4,6 @@ import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationTable;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
-import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.util.*;
 

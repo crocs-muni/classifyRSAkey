@@ -21,6 +21,9 @@ import java.util.regex.Pattern;
  * @version 02/10/2016
  */
 public class ClassificationKey {
+
+    public static final String DUPLICITY_COUNT_FIELD = "count";
+
     /**
      * RSA key
      */
@@ -145,6 +148,18 @@ public class ClassificationKey {
         return shortenModulus(rsaKey.getModulus());
     }
 
+    private static String firstStringInValue(Object object) {
+        if (object instanceof String) {
+            return (String) object;
+        }
+        if (object instanceof JSONArray) {
+            if (!((JSONArray) object).isEmpty()) {
+                return firstStringInValue(((JSONArray) object).get(0));
+            }
+        }
+        return null;
+    }
+
     public static ClassificationKey fromNewJsonFormat(String json) throws ParseException, WrongKeyException {
         ClassificationKey key = new ClassificationKey();
 
@@ -153,17 +168,19 @@ public class ClassificationKey {
         if (!isNewJsonFormat(json)) {
             throw new WrongKeyException("Key does not contain n or p and q.");
         }
-        if (object.containsKey("n")) key.rsaKey.setModulus(BigIntegerConversion.fromString((String)object.get("n")));
-        if (object.containsKey("e")) key.rsaKey.setExponent(BigIntegerConversion.fromString((String)object.get("e")));
-        if (object.containsKey("p")) key.rsaKey.setP(BigIntegerConversion.fromString((String)object.get("p")));
-        if (object.containsKey("q")) key.rsaKey.setQ(BigIntegerConversion.fromString((String)object.get("q")));
+        if (object.containsKey("n")) key.rsaKey.setModulus(BigIntegerConversion.fromString(firstStringInValue(object.get("n"))));
+        if (object.containsKey("e")) key.rsaKey.setExponent(BigIntegerConversion.fromString(firstStringInValue(object.get("e"))));
+        if (object.containsKey("p")) key.rsaKey.setP(BigIntegerConversion.fromString(firstStringInValue(object.get("p"))));
+        if (object.containsKey("q")) key.rsaKey.setQ(BigIntegerConversion.fromString(firstStringInValue(object.get("q"))));
         if (object.containsKey("ordered")) key.ordered = (Boolean)object.get("ordered");
-        if (object.containsKey("count")) key.count = ((Number)object.get("count")).intValue();
+        if (object.containsKey(DUPLICITY_COUNT_FIELD)) key.count = ((Number)object.get(DUPLICITY_COUNT_FIELD)).intValue();
         if (object.containsKey("source")) {
             key.source = new CopyOnWriteArraySet<>();
             JSONArray array = (JSONArray)object.get("source");
             for (Object sourcePart : array) {
-                key.source.add((String)sourcePart);
+                if (sourcePart != null) {
+                    key.source.add(sourcePart.toString());
+                }
             }
         }
         if (object.containsKey("info")) key.info = (JSONObject)object.get("info");
@@ -185,7 +202,7 @@ public class ClassificationKey {
 
         //Read all needed information about certificate
         //Property count is not necessary, represent number of duplicities in source key set
-        Number countNumber = (Number) obj.getOrDefault("count", 1);
+        Number countNumber = (Number) obj.getOrDefault(DUPLICITY_COUNT_FIELD, 1);
         int count = countNumber.intValue();
 
         //Property validity has to have property start with date

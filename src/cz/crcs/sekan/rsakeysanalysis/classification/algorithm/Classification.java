@@ -8,6 +8,7 @@ import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.statistics.Batches
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.statistics.StatisticsAggregator;
 import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKey;
 import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKeyStub;
+import cz.crcs.sekan.rsakeysanalysis.classification.key.property.ModulusHashPropertyExtractor;
 import cz.crcs.sekan.rsakeysanalysis.classification.key.property.PrimePropertyExtractor;
 import cz.crcs.sekan.rsakeysanalysis.classification.key.property.PropertyExtractor;
 import cz.crcs.sekan.rsakeysanalysis.classification.key.property.SourcePropertyExtractor;
@@ -52,11 +53,13 @@ public class Classification<BatchProperty> {
     private BatchHolder<BatchProperty> batchHolder;
 
     private Classification() {
+        makeOutputs = false;
     }
 
     public enum BatchType {
         SOURCE("source"),
         PRIMES("primes"),
+        MODULUS_HASH("modulus_hash"),
         NONE("none");
 
         private final String name;
@@ -195,6 +198,10 @@ public class Classification<BatchProperty> {
                     builder = new Classification.Builder<BigInteger>();
                     builder.setPropertyExtractor(new PrimePropertyExtractor());
                     break;
+                case MODULUS_HASH:
+                    builder = new Classification.Builder<BigInteger>();
+                    builder.setPropertyExtractor(new ModulusHashPropertyExtractor());
+                    break;
                 case NONE:
                     builder = new Classification.Builder<Object>();
                     builder.setPropertyExtractor(null);
@@ -243,7 +250,8 @@ public class Classification<BatchProperty> {
             if (formatter == null) {
                 dataSetSaver = new NoActionDataSetSaver();
             } else {
-                ExtendedWriter datasetWriter = new ExtendedWriter(new File(config.outputFolderPath, getDataSetName(iterator)));
+                ExtendedWriter datasetWriter = new ExtendedWriter(new File(config.outputFolderPath,
+                        "dataset_" + getDataSetName(iterator)));
                 switch (config.memoryType) {
                     case DISK:
                         dataSetSaver = new FromFileDataSetSaver(new FileDataSetIterator(datasetFilePath), formatter, datasetWriter);
@@ -328,8 +336,8 @@ public class Classification<BatchProperty> {
         time = System.currentTimeMillis();
         PriorProbability priorProbability = priorProbabilityEstimator.computePriorProbability();
 
+        statisticsAggregator.savePriorProbabilitySummary(priorProbabilityEstimator);
         if (onlyPriorEstimation || batchHolder == null) {
-            statisticsAggregator.savePriorProbabilitySummary(priorProbabilityEstimator);
             return priorProbabilityEstimator;
         }
 

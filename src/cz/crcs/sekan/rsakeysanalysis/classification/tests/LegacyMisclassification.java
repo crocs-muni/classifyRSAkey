@@ -24,7 +24,7 @@ import java.util.TreeMap;
  * @author Peter Sekan, peter.sekan@mail.muni.cz
  * @version 12.06.2016
  */
-public class Misclassification {
+public class LegacyMisclassification {
     private Random generator;
 
     private final int keysForTest[] = {1, 5, 10, 100};
@@ -32,7 +32,7 @@ public class Misclassification {
     private ClassificationTable classificationTable;
     private RawTable testsKeysTable;
 
-    public Misclassification(String infile, long keys)  throws IOException, ParseException, NoSuchAlgorithmException, WrongTransformationFormatException, TransformationNotFoundException {
+    public LegacyMisclassification(String infile, long keys)  throws IOException, ParseException, NoSuchAlgorithmException, WrongTransformationFormatException, TransformationNotFoundException {
         RawTable table = RawTable.load(infile);
         Pair<RawTable, RawTable> pair = table.splitForTests(keys);
         RawTable withoutTestsKeysTable = pair.getValue();
@@ -44,13 +44,13 @@ public class Misclassification {
     public void compute(String outfile) throws IOException {
         try (ExtendedWriter writer = new ExtendedWriter(outfile)) {
             for (int keyForTest : keysForTest) {
-                writer.writeln("Misclassification," + keyForTest + " keys");
+                writer.writeln("LegacyMisclassification," + keyForTest + " keys");
                 writeClassificationResultToCsv(computeAllForNKeys(keyForTest, testsKeysTable.copyTable()), writer);
                 writer.newLine();
             }
 
             for (int keyForTest : keysForTest) {
-                writer.writeln("Misclassification," + keyForTest + " keys,Top 1");
+                writer.writeln("LegacyMisclassification," + keyForTest + " keys,Top 1");
                 writeResultToCsv(computeTopForNKeys(keyForTest, testsKeysTable.copyTable()), writer);
                 writer.newLine();
             }

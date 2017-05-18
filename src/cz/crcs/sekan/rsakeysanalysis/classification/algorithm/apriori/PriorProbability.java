@@ -1,6 +1,7 @@
 package cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori;
 
 import cz.crcs.sekan.rsakeysanalysis.classification.tests.util.ClassificationSuccessStatisticsAggregator;
+import org.apache.commons.math3.stat.inference.ChiSquareTest;
 import org.json.simple.JSONObject;
 import sun.awt.AWTAccessor;
 
@@ -8,12 +9,53 @@ import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.util.*;
 import java.util.function.BinaryOperator;
+import java.util.stream.Collectors;
 
 /**
+ * Vector of probabilities, summing to one, unless scale using scale().
+ *
+ * BigDecimal is used for probabilities, because we often encounter batches of several keys. That leads to high powers
+ * of the probabilities and loss of precision with ordinary types (e.g. 11 bits of exponent in double are not enough
+ * and we would lose precision on mantissa)
+ *
  * @author xnemec1
  * @version 11/24/16.
  */
 public class PriorProbability extends TreeMap<String, BigDecimal> {
+
+    public static final double ERROR_MEASURE_NOT_AVAILABLE = Double.NaN;
+
+    public enum Distribution {
+        EVEN,
+        UNIFORM,
+        GEOMETRIC,
+        CUSTOM
+    }
+
+    private double errorMeasure;
+
+    private double distributionFitPValue;
+
+    public PriorProbability() {
+        errorMeasure = ERROR_MEASURE_NOT_AVAILABLE;
+    }
+
+    public double getErrorMeasure() {
+        return errorMeasure;
+    }
+
+    public void setErrorMeasure(double errorMeasure) {
+        this.errorMeasure = errorMeasure;
+    }
+
+    public double getDistributionFitPValue() {
+        return distributionFitPValue;
+    }
+
+    public void setDistributionFitPValue(double distributionFitPValue) {
+        this.distributionFitPValue = distributionFitPValue;
+    }
+
     public BigDecimal setGroupProbability(String groupName, BigDecimal priorProbability) {
         return put(groupName, priorProbability);
     }
@@ -88,6 +130,35 @@ public class PriorProbability extends TreeMap<String, BigDecimal> {
         return priorProbability.normalized();
     }
 
+    public static PriorProbability randomizeGeometric(Random random, List<String> groupNames, BigDecimal probability, BigDecimal tailProbability) {
+        PriorProbability priorProbability = new PriorProbability();
+        BigDecimal sourceProbability = probability.abs();
+        List<String> unusedGroupNames = new ArrayList<>(groupNames);
+        BigDecimal remainingProbability = BigDecimal.ONE.subtract(sourceProbability);
+        while (!unusedGroupNames.isEmpty()) {
+            int nextGroup = random.nextInt(unusedGroupNames.size());
+            priorProbability.put(unusedGroupNames.get(nextGroup), sourceProbability);
+            if (tailProbability.compareTo(remainingProbability.multiply(probability)) > 0) {
+                sourceProbability = tailProbability;
+            } else {
+                sourceProbability = remainingProbability.multiply(probability);
+                remainingProbability = remainingProbability.subtract(sourceProbability);
+            }
+            unusedGroupNames.remove(nextGroup);
+        }
+        return priorProbability.normalized();
+    }
+
+    public static PriorProbability randomizeFromPrior(Random random, PriorProbability referenceProbability, BigDecimal noise) {
+        PriorProbability noisyProbability = referenceProbability.makeCopy();
+        for (String group : noisyProbability.keySet()) {
+            noisyProbability.setGroupProbability(group, noisyProbability.getGroupProbability(group).add(
+                    noise.multiply(BigDecimal.valueOf(2)).multiply(BigDecimal.valueOf(random.nextFloat())))
+                    .subtract(noise.divide(BigDecimal.ONE.subtract(noise), BigDecimal.ROUND_HALF_EVEN)).abs());
+        }
+        return noisyProbability.normalized();
+    }
+
     public PriorProbability scale(BigDecimal scale) {
         PriorProbability scaled = new PriorProbability();
         for (Map.Entry<String, BigDecimal> entry : entrySet()) {
@@ -107,10 +178,71 @@ public class PriorProbability extends TreeMap<String, BigDecimal> {
         return summed;
     }
 
-    public BigDecimal distance(PriorProbability other) {
-        BigDecimal distance = BigDecimal.ZERO;
-        if (!other.keySet().containsAll(this.keySet())) {
+    public double[] toDoubleArray(List<String> groupsOrdered) {
+        if (!keySet().containsAll(groupsOrdered)) {
+            System.err.println("toDoubleArray: Some requested groups are missing");
+            return null;
+        }
+        double[] probabilities = new double[groupsOrdered.size()];
+        int i = 0;
+        for (String groupName : groupsOrdered) {
+            probabilities[i++] = getOrDefault(groupName, BigDecimal.ZERO).doubleValue();
+        }
+        return probabilities;
+    }
+
+    public long[] toLongArray(List<String> groupsOrdered, long sampleSize) {
+        double[] doubleArray = toDoubleArray(groupsOrdered);
+        long[] longArray = new long[doubleArray.length];
+        for (int i = 0; i < doubleArray.length; i++) {
+            longArray[i] = (long) (doubleArray[i] * sampleSize);
+        }
+        return longArray;
+    }
+
+    public List<BigDecimal> toBigDecimalList(List<String> groupsOrdered) {
+        if (!keySet().containsAll(groupsOrdered)) {
+            System.err.println("toBigDecimalList: Some requested groups are missing");
+            return null;
+        }
+        List<BigDecimal> probabilities = new ArrayList<>(groupsOrdered.size());
+        for (String groupName : groupsOrdered) {
+            probabilities.add(getOrDefault(groupName, BigDecimal.ZERO));
+        }
+        return probabilities;
+    }
+
+    public double distance(PriorProbability other, long sampleSize) {
+        if (other.keySet().size() != this.keySet().size() || !other.keySet().containsAll(this.keySet())) {
             System.err.println("The prior probabilities do not contain equal groups");
+            return 0d;
+        }
+        List<String> groupNames = new ArrayList<>();
+        for (Map.Entry<String, BigDecimal> entry : entrySet()) {
+            if (entry.getValue().doubleValue() > 0d) {
+                groupNames.add(entry.getKey());
+            } else {
+                BigDecimal otherProbability = other.getGroupProbability(entry.getKey());
+                if (otherProbability != null && otherProbability.doubleValue() > 0d) {
+                    // value is not expected, but it is present
+                    return 0d;
+                }
+            }
+        }
+        ChiSquareTest test = new ChiSquareTest();
+        double[] observed = other.normalized().toDoubleArray(groupNames);
+        long[] observedCounts = new long[observed.length];
+        for (int i = 0; i < observed.length; i++) {
+            observedCounts[i] = Double.valueOf(observed[i]*sampleSize).longValue();
+        }
+        double pValue = test.chiSquareTest(this.toDoubleArray(groupNames), observedCounts);
+        return pValue;
+    }
+
+    public BigDecimal distanceLegacy(PriorProbability other) {
+        BigDecimal distance = BigDecimal.ZERO;
+        if (other.keySet().size() != this.keySet().size() || !other.keySet().containsAll(this.keySet())) {
+            System.err.println("distance: The prior probabilities do not contain equal groups");
             return null;
         }
         PriorProbability otherNormalized = other.normalized();

@@ -189,4 +189,35 @@ public class ClassificationTable {
             row.addSource(sourceName, maskProbabilities.get(mask));
         }
     }
+
+    public Map<String, BigDecimal> simulateStatistics(PriorProbability probability) {
+        Map<String, BigDecimal> maskToFrequency = new TreeMap<>();
+
+        // TODO ensure table column-normalized
+
+        List<String> masks = getMasks();
+
+        for (String mask : masks) {
+            ClassificationRow row = classifyIdentification(mask);
+            ClassificationRow rowWithPrior = row.deepCopy();
+            rowWithPrior.applyPriorProbabilities(probability, false);
+            BigDecimal weighedSum = BigDecimal.ZERO;
+            for (BigDecimal weighedProbability : rowWithPrior.getValues().values()) {
+                weighedSum = weighedSum.add(weighedProbability);
+            }
+            maskToFrequency.put(mask, weighedSum);
+        }
+
+        return maskToFrequency;
+    }
+
+    public Map<String, BigDecimal> removeGroup(String groupName) {
+        priorProbability.remove(groupName);
+        groups.remove(groupName);
+        Map<String, BigDecimal> maskToCount = new TreeMap<>();
+        for (Map.Entry<String, ClassificationRow> entry : table.entrySet()) {
+            maskToCount.put(entry.getKey(), entry.getValue().removeSource(groupName));
+        }
+        return maskToCount;
+    }
 }

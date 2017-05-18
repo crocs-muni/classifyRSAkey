@@ -305,4 +305,10 @@ public class ClassificationRow {
     public BigDecimal addSource(String sourceName, BigDecimal probability) {
         return sources.put(sourceName, probability);
     }
+
+    BigDecimal removeSource(String source) {
+        BigDecimal originalValue = sources.getOrDefault(source, BigDecimal.ZERO);
+        sources.remove(source);
+        return originalValue;
+    }
 }

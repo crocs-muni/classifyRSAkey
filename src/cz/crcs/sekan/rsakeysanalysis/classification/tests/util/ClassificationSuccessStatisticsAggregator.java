@@ -1,7 +1,6 @@
 package cz.crcs.sekan.rsakeysanalysis.classification.tests.util;
 
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori.PriorProbabilityEstimator;
-import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.statistics.BatchStatistic;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.statistics.StatisticsAggregator;
 import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKeyStub;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationContainer;
@@ -13,10 +12,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * @author xnemec1

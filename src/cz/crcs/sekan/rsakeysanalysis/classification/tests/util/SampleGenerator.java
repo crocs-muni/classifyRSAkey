@@ -16,6 +16,9 @@ public class SampleGenerator<SampleType> {
     private List<BigDecimal> cumulativeDistribution;
 
     public SampleGenerator(List<SampleType> samples, List<BigDecimal> probabilities) {
+        if (samples.size() == 0) {
+            throw new IllegalArgumentException("Must have at east one sample");
+        }
         if (samples.size() != probabilities.size()) {
             throw new IllegalArgumentException("The number of samples and probabilities does not match");
         }

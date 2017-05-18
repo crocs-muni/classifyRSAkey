@@ -13,14 +13,31 @@ import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.statistics.Batches
 import cz.crcs.sekan.rsakeysanalysis.classification.key.property.SourcePropertyExtractor;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationRow;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationTable;
+import cz.crcs.sekan.rsakeysanalysis.classification.tests.util.DataType;
+import cz.crcs.sekan.rsakeysanalysis.classification.tests.util.DistributionsComparator;
 import cz.crcs.sekan.rsakeysanalysis.classification.tests.util.SimulatedDataSetIterator;
+import cz.crcs.sekan.rsakeysanalysis.common.ExtendedWriter;
+import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
+import java.io.File;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.*;
 
 /**
+ * Measuring precision of prior probability estimation and the influence of prior probability estimate on classification
+ *
+ * The testing data influences the results:
+ *  - if results are computed from raw distributions, precision of the method can be evaluated,
+ *    but real distributions will never match the reference ones
+ *  - simulating data randomly according to their distribution provides a more realistic picture,
+ *    but variations hide potential problems with the method
+ *  - TODO: experiments with real data provide most trustworthy results, but there is a limited amount of it,
+ *    hence results may not be representative
+ *
  * @author xnemec1
  * @version 3/2/17.
  */
@@ -30,68 +47,224 @@ public class AprioriTest {
     private static final double MAX_INTERCEPT_PROBABILITY = 0.05;
     private static final BigDecimal MAX_ESTIMATE_ERROR = BigDecimal.valueOf(0.05d);
 
-    /**
-     * This test simulates random prior probabilities over the classification table in the supplied configuration
-     * and measures how the estimated probability matches the used one.
-     * Includes a test with added random source, which aims to simulate distributions of unknown sources.
-     * @param configuration
-     * @throws NoSuchAlgorithmException
-     */
-    public static void testEstimatePrecision(ClassificationConfiguration configuration) throws NoSuchAlgorithmException {
-
-        List<String> groupNames = new ArrayList<>(configuration.classificationTable.getGroupsNames());
+    public static void testPriorEstimation(ClassificationConfiguration configuration) throws NoSuchAlgorithmException {
 
         SecureRandom random = configuration.configureRandom();
         System.out.println("Experiment seed: " + configuration.rngSeed);
 
-        PriorProbability uniform = PriorProbability.uniformProbability(groupNames);
+        configuration.makeOutputs = false;
+        int repetitionCount = configuration.keyCount;
+        int percentileStep = 5;
+        double confidence = 0.95;
 
-        BigDecimal sumDistanceEstimated = BigDecimal.ZERO;
-        BigDecimal sumDistanceUniform = BigDecimal.ZERO;
+        ClassificationTable realTable = configuration.classificationTable;
 
-        for (boolean addRandomSource : new boolean[]{false, true}) {
-
-            for (int i = 0; i < configuration.keyCount; i++) {
-                ClassificationTable tableForSimulation = configuration.classificationTable.makeCopy();
-
-                PriorProbability randomProbability;
-
-                if (addRandomSource) {
-                    tableForSimulation = addRandomGroupToTable(tableForSimulation, random);
-                    randomProbability = PriorProbability.randomize(random, new ArrayList<>(tableForSimulation.getGroupsNames()));
-                    randomProbability.put(INTERCEPT_GROUP_NAME, BigDecimal.valueOf(random.nextDouble() * MAX_INTERCEPT_PROBABILITY));
-                    randomProbability = randomProbability.normalized();
-                } else {
-                    randomProbability = PriorProbability.randomize(random, groupNames);
-                }
-
-                Map<String, BigDecimal> simulatedStatistic =
-                        simulateStatistics(tableForSimulation, randomProbability.makeCopy());
-                PriorProbabilityEstimator estimator = new NonNegativeLeastSquaresFitPriorProbabilityEstimator(configuration.classificationTable.makeCopy());
-                estimator.setMaskToFrequency(simulatedStatistic);
-                PriorProbability estimatedProbability = estimator.computePriorProbability();
-
-                if (addRandomSource) {
-                    randomProbability.remove(INTERCEPT_GROUP_NAME);
-                    randomProbability = randomProbability.normalized();
-                }
-
-                BigDecimal distance = randomProbability.distance(estimatedProbability);
-                sumDistanceEstimated = sumDistanceEstimated.add(distance);
-                sumDistanceUniform = sumDistanceUniform.add(randomProbability.distance(uniform));
+        for (DataType dataType : new DataType[] {DataType.THEORETICAL, DataType.SIMULATION}) {
+            switch (dataType) {
+                case THEORETICAL:
+                    System.out.println("\n==== Theoretical results based on source distributions ====");
+                    break;
+                case SIMULATION:
+                    System.out.println("\n==== Results based on simulated sources (randomly by their distributions) ====");
+                    break;
+                case REAL:
+                    System.out.println("\n==== Results based on real keys randomly generated by the sources ====");
+                    break;
+                default:
+                    throw new NotImplementedException();
             }
+
+            System.out.println("DataType;UnknownGroup;GroupCount;SampleSize;Trials;KSpValue;Conclusion;" + DistributionsComparator.percentilesHeader(percentileStep));
+
+            try (ExtendedWriter experimentLog = new ExtendedWriter(
+                    new File(configuration.outputFolderPath, String.format("apriori_%d_%s_%d.csv",
+                            configuration.rngSeed, dataType.toString(), System.currentTimeMillis())))) {
+                String header = "distributions_fit;estimation_error;probabilities_fit;estimated_precision;" +
+                        "sample_size;added_noise";
+                experimentLog.writeln(header);
+                for (double unknownGroupMaxProbability = 0d;
+                     unknownGroupMaxProbability < 0.06d;
+                     unknownGroupMaxProbability += 0.01d) {
+                    for (int sampleSize = 1000; sampleSize <= 1000*(2<<13); sampleSize *= 2) {
+                        testEstimatePrecision(random, realTable.makeCopy(), dataType,
+                                repetitionCount, percentileStep, sampleSize,
+                                confidence, unknownGroupMaxProbability, experimentLog);
+                    }
+                }
+                experimentLog.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+    }
+
+    // TODO correlation of noise probability and prior probability estimation error
+    // TODO then from PP estimation estimate the noise and choose the appropriate precision
+
+    /**
+     * This test simulates random prior probabilities over the classification table in the supplied configuration
+     * and measures how the estimated probability matches the used one.
+     * Includes a test with added random source, which aims to simulate distributions of unknown sources.
+     */
+    private static void testEstimatePrecision(Random random, ClassificationTable table, DataType dataType,
+                                              int repetitionCount, int percentileStep, int sampleSize,
+                                              double confidence, double unknownGroupMaxProbability,
+                                              ExtendedWriter experimentLog) {
+
+        List<String> groupNames = new ArrayList<>(table.getGroupsNames());
+
+        List<Double> worstDifferences = new ArrayList<>(repetitionCount);
+        DescriptiveStatistics errorStatistic = new DescriptiveStatistics();
+        DescriptiveStatistics fitStatistic = new DescriptiveStatistics();
+
+        boolean addRandomSource = unknownGroupMaxProbability > 0d;
+
+        for (int i = 0; i < repetitionCount; i++) {
+            ClassificationTable tableForSimulation = table.makeCopy();
+
+            PriorProbability randomProbability;
+
+            double randomNoiseProbability = 0d;
 
             if (addRandomSource) {
-                System.out.println("\nA completely random group is added to simulate unknown groups which can cover up to "
-                        + MAX_INTERCEPT_PROBABILITY * 100 + "% of the simulated dataset");
+                tableForSimulation = addRandomGroupToTable(tableForSimulation, random);
+                randomProbability = PriorProbability.randomize(random, new ArrayList<>(tableForSimulation.getGroupsNames()));
+                randomProbability.put(INTERCEPT_GROUP_NAME, BigDecimal.valueOf(random.nextDouble() * (unknownGroupMaxProbability / (1 - unknownGroupMaxProbability))));
+                randomProbability = randomProbability.normalized();
+                randomNoiseProbability = randomProbability.getGroupProbability(INTERCEPT_GROUP_NAME).doubleValue();
+            } else {
+                randomProbability = PriorProbability.randomize(random, groupNames);
             }
-            System.out.println("Average distance from random prior distribution:");
-            System.out.println(String.format("    to estimated: %s",
-                    sumDistanceEstimated.divide(BigDecimal.valueOf(configuration.keyCount),
-                            PriorProbability.BIG_DECIMAL_SCALE, BigDecimal.ROUND_HALF_EVEN)));
-            System.out.println(String.format("    to uniform:   %s",
-                    sumDistanceUniform.divide(BigDecimal.valueOf(configuration.keyCount),
-                            PriorProbability.BIG_DECIMAL_SCALE, BigDecimal.ROUND_HALF_EVEN)));
+
+            PriorProbabilityEstimator estimator = new NonNegativeLeastSquaresFitPriorProbabilityEstimator(table.makeCopy());
+
+            switch (dataType) {
+                case THEORETICAL:
+                    BigDecimal sampleSizeDecimal = BigDecimal.valueOf(sampleSize);
+                    Map<String, BigDecimal> simulatedStatistic =
+                            tableForSimulation.simulateStatistics(randomProbability.makeCopy());
+                    for (Map.Entry<String, BigDecimal> entry : simulatedStatistic.entrySet()) {
+                        entry.setValue(entry.getValue().multiply(sampleSizeDecimal));
+                    }
+                    estimator.setMaskToFrequency(simulatedStatistic);
+                    break;
+                case SIMULATION:
+                    SimulatedDataSetIterator iterator = SimulatedDataSetIterator
+                            .fromClassificationTable(tableForSimulation.makeCopy(), randomProbability.makeCopy(), sampleSize, random);
+                    while (iterator.hasNext()) estimator.addMask(iterator.next().getIdentification());
+                    break;
+                case REAL:
+                    // TODO
+                default:
+                    throw new NotImplementedException();
+            }
+
+            PriorProbability estimatedProbability = estimator.computePriorProbability();
+            double estimationError = estimatedProbability.getErrorMeasure();
+            errorStatistic.addValue(estimationError);
+            double distributionsFit = estimatedProbability.getDistributionFitPValue();
+            fitStatistic.addValue(distributionsFit);
+
+            double probabilitiesFit = DistributionsComparator.compareDistributions(
+                    randomProbability.toDoubleArray(groupNames),
+                    estimatedProbability.toLongArray(groupNames, sampleSize));
+
+            if (addRandomSource) {
+                randomProbability.remove(INTERCEPT_GROUP_NAME);
+                randomProbability = randomProbability.normalized();
+            }
+            // TODO correlation of observed/fitted distribution and true/estimated probability
+            // LSF error measure is not sufficient
+            double largestDifference = DistributionsComparator.largestDifference(
+                    randomProbability.toDoubleArray(groupNames), estimatedProbability.toDoubleArray(groupNames));
+            worstDifferences.add(largestDifference);
+            try {
+                experimentLog.writeln(String.format("%1.20f;%1.20f;%1.20f;%1.20f;%d;%1.20f",
+                        distributionsFit,
+                        estimationError,
+                        probabilitiesFit,
+                        largestDifference, //estimatedPrecision,
+                        sampleSize,
+                        randomNoiseProbability
+                        ));
+            } catch (IOException e) {
+                System.err.println("Failed to write to log file");
+                e.printStackTrace();
+            }
+        }
+
+        System.out.print(String.format("%s;", dataType));
+        System.out.print(String.format("%1.2f;", unknownGroupMaxProbability));
+        System.out.print(String.format("%d;%8d;%d;", groupNames.size(), sampleSize, repetitionCount));
+
+        double worstDifference = worstDifferences.stream().max(Double::compare).orElseGet(() -> 1d);
+
+        DescriptiveStatistics statistics = new DescriptiveStatistics();
+        worstDifferences.forEach(statistics::addValue);
+        System.out.print(String.format("mean=%1.3f;",statistics.getMean()));
+        StringBuilder builder = new StringBuilder();
+        for (int percentile = percentileStep; percentile <= 100; percentile += percentileStep) {
+            builder.append(String.format("%1.3f;", statistics.getPercentile(percentile)));
+        }
+        System.out.println(builder.toString());
+
+        builder = new StringBuilder();
+        for (int percentile = percentileStep; percentile <= 100; percentile += percentileStep) {
+            builder.append(String.format("%1.3f;", fitStatistic.getPercentile(percentile)));
+        }
+        System.out.println(String.format("Dist fit: mean = %1.5f;%s", fitStatistic.getMean(), builder.toString()));
+
+        System.out.print(String.format("worst precision: %1.6f (classification result is given +-%1.6f)",
+                worstDifference, worstDifference));
+        System.out.println(String.format("; mean LSF error = %f", errorStatistic.getMean()));
+
+    }
+
+    private static class SignificanceFinder {
+        private List<PriorProbability> realProbabilities;
+        private List<PriorProbability> estimatedProbabilities;
+        private List<Double> bestPrecisionOfTrial;
+        private double confidenceInterval;
+        private List<String> groupNames;
+
+        public SignificanceFinder(int trials, List<String> groupNames, double confidenceInterval) {
+            realProbabilities = new ArrayList<>(trials);
+            estimatedProbabilities = new ArrayList<>(trials);
+            bestPrecisionOfTrial = new ArrayList<>(trials);
+            this.confidenceInterval = confidenceInterval;
+            this.groupNames = groupNames;
+        }
+
+        public double findPrecisionSingle(PriorProbability realProbability, PriorProbability estimatedProbability) {
+            for (double precision = 0.00001d; precision < 1d; ) {
+                double pValue = DistributionsComparator.compareDistributions(
+                        realProbability.toDoubleArray(groupNames),
+                        estimatedProbability.toLongArray(groupNames, (int) (1d / precision)),
+                        true); // TODO
+                if (pValue >= confidenceInterval) {
+                    return precision;
+                } else {
+                    precision += 2*Math.pow(10, (int) (Math.log10(precision) - 2d));
+                }
+            }
+            return 1d;
+        }
+
+        public double addObservation(PriorProbability realProbability, PriorProbability estimatedProbability) {
+            realProbabilities.add(realProbability);
+            estimatedProbabilities.add(estimatedProbability);
+            double bestPrecision = findPrecisionSingle(realProbability, estimatedProbability);
+            bestPrecisionOfTrial.add(bestPrecision);
+            return bestPrecision;
+        }
+
+        public double findPrecision() {
+            return bestPrecisionOfTrial.stream().max(Double::compare).orElseGet(() -> 1d);
+        }
+
+        public List<Double> getBestPrecisionOfTrial() {
+            return Collections.unmodifiableList(bestPrecisionOfTrial);
         }
     }
 
@@ -104,59 +277,158 @@ public class AprioriTest {
         ClassificationTable table = configuration.classificationTable;
         int repetitionCount = configuration.keyCount;
 
-        // I sanity check -- simulate dataset with random prior probability, use the same probability for classification
-        System.out.println("==== Classification prior probability is the same as dataset prior probability ====");
-        for (int i = 0; i < repetitionCount; i++) {
-            PriorProbability randomProbability = PriorProbability.randomize(random, new ArrayList<>(table.getGroupsNames()));
-            classifyRandom(random, table.makeCopy(), randomProbability, randomProbability);
-        }
+        configuration.makeOutputs = false;
 
-        // II sanity check -- simulate dataset with random prior probability, estimate and classify
-        System.out.println("==== Classification prior probability is estimated from the dataset ====");
-        for (int i = 0; i < repetitionCount; i++) {
-            PriorProbability randomProbability = PriorProbability.randomize(random, new ArrayList<>(table.getGroupsNames()));
-            classifyRandom(random, table.makeCopy(), randomProbability, null);
-        }
+        for (boolean addRandomSource : new boolean[]{false, true}) {
+            System.out.println("---- Tests with" + (addRandomSource ? "" : "out") + " random source (simulates unknown groups) ----\n");
 
-        // III -- simulate dataset with random prior probability, use slightly wrong prior probability estimate
-        System.out.println("==== Classification prior probability is slightly off from the dataset prior probability ===="); // TODO repeat for different distances
-        for (int i = 0; i < repetitionCount; i++) {
-            PriorProbability randomProbability = PriorProbability.randomize(random, new ArrayList<>(table.getGroupsNames()));
-            PriorProbability badEstimate = PriorProbability.randomize(random, new ArrayList<>(table.getGroupsNames()))
-                    .scale(MAX_ESTIMATE_ERROR).sum(randomProbability).normalized();
-            classifyRandom(random, table.makeCopy(), randomProbability, badEstimate);
-        }
+            // I sanity check -- simulate dataset with random prior probability, use the same probability for classification
+            System.out.println("==== Prior probability is the same as dataset prior probability ====");
+            Averaged averaged = new Averaged();
+            for (int i = 0; i < repetitionCount; i++) {
+                PriorProbability randomProbability = PriorProbability.randomize(random, new ArrayList<>(table.getGroupsNames()));
+                averaged.add(classifyRandom(random, table.makeCopy(), randomProbability, randomProbability, addRandomSource, MAX_INTERCEPT_PROBABILITY));
+            }
+            System.out.println(averaged);
 
-        // IV -- simulate dataset with random prior probability, use uniform prior probability estimate
-        System.out.println("==== Classification prior probability is uniform ====");
-        for (int i = 0; i < repetitionCount; i++) {
-            PriorProbability randomProbability = PriorProbability.randomize(random, new ArrayList<>(table.getGroupsNames()));
-            PriorProbability uniformEstimate = PriorProbability.uniformProbability(new ArrayList<>(table.getGroupsNames()));
-            classifyRandom(random, table.makeCopy(), randomProbability, uniformEstimate);
-        }
+            // II sanity check -- simulate dataset with random prior probability, estimate and classify
+            System.out.println("==== Prior probability is estimated from the dataset ====");
+            averaged = new Averaged();
+            for (int i = 0; i < repetitionCount; i++) {
+                PriorProbability randomProbability = PriorProbability.randomize(random, new ArrayList<>(table.getGroupsNames()));
+                averaged.add(classifyRandom(random, table.makeCopy(), randomProbability, null, addRandomSource, MAX_INTERCEPT_PROBABILITY));
+            }
+            System.out.println(averaged);
 
-        // V -- simulate dataset with random prior probability, use wrong random prior probability estimate
-        System.out.println("==== Classification prior probability is completely random ====");
-        for (int i = 0; i < repetitionCount; i++) {
-            PriorProbability randomProbability = PriorProbability.randomize(random, new ArrayList<>(table.getGroupsNames()));
-            PriorProbability randomEstimate = PriorProbability.randomize(random, new ArrayList<>(table.getGroupsNames()));
-            classifyRandom(random, table.makeCopy(), randomProbability, randomEstimate);
+            // III -- simulate dataset with random prior probability, use slightly wrong prior probability estimate
+            System.out.println("==== Prior probability is slightly off from the dataset prior probability ===="); // TODO repeat for different distances
+            averaged = new Averaged();
+            for (int i = 0; i < repetitionCount; i++) {
+                PriorProbability randomProbability = PriorProbability.randomize(random, new ArrayList<>(table.getGroupsNames()));
+                PriorProbability badEstimate = PriorProbability.randomize(random, new ArrayList<>(table.getGroupsNames()))
+                        .scale(MAX_ESTIMATE_ERROR).sum(randomProbability).normalized();
+                averaged.add(classifyRandom(random, table.makeCopy(), randomProbability, badEstimate, addRandomSource, MAX_INTERCEPT_PROBABILITY));
+            }
+            System.out.println(averaged);
+
+            // IV -- simulate dataset with random prior probability, use uniform prior probability estimate
+            System.out.println("==== Prior probability is uniform ====");
+            averaged = new Averaged();
+            for (int i = 0; i < repetitionCount; i++) {
+                PriorProbability randomProbability = PriorProbability.randomize(random, new ArrayList<>(table.getGroupsNames()));
+                PriorProbability uniformEstimate = PriorProbability.uniformProbability(new ArrayList<>(table.getGroupsNames()));
+                averaged.add(classifyRandom(random, table.makeCopy(), randomProbability, uniformEstimate, addRandomSource, MAX_INTERCEPT_PROBABILITY));
+            }
+            System.out.println(averaged);
+
+            // V -- simulate dataset with random prior probability, use wrong random prior probability estimate
+            System.out.println("==== Prior probability is completely random ====");
+            averaged = new Averaged();
+            for (int i = 0; i < repetitionCount; i++) {
+                PriorProbability randomProbability = PriorProbability.randomize(random, new ArrayList<>(table.getGroupsNames()));
+                PriorProbability randomEstimate = PriorProbability.randomize(random, new ArrayList<>(table.getGroupsNames()));
+                averaged.add(classifyRandom(random, table.makeCopy(), randomProbability, randomEstimate, addRandomSource, MAX_INTERCEPT_PROBABILITY));
+            }
+            System.out.println(averaged);
+            System.out.println();
         }
 
         // VI -- repeat with random intercept
-        // TODO
     }
 
-    private static void classifyRandom(Random random, ClassificationTable table,
-                                       PriorProbability simulatedProbability,
-                                       PriorProbability classificationProbability) {
+    private static class ClassificationStatistic {
+        public PriorProbability datasetProbability;
+        public PriorProbability aprioriProbability;
+        public PriorProbability resultProbability;
+
+        public long sampleCount;
+
+        public ClassificationStatistic(long sampleCount) {
+            this.sampleCount = sampleCount;
+        }
+
+        public double distancePriorToReal() {
+            return datasetProbability.distance(aprioriProbability, sampleCount);
+        }
+
+        public double distanceClassificationToReal() {
+            return datasetProbability.distance(resultProbability, sampleCount);
+        }
+
+        public double distanceClassificationToPrior() {
+            return aprioriProbability.distance(resultProbability, sampleCount);
+        }
+    }
+
+    private static class Averaged {
+        private double distanceClassificationToReal;
+        private double distanceClassificationToPrior;
+        private double distancePriorToReal;
+
+        private int samples;
+
+        public Averaged() {
+            distanceClassificationToReal = 0d;
+            distanceClassificationToPrior = 0d;
+            distancePriorToReal = 0d;
+            samples = 0;
+        }
+
+        public void add(ClassificationStatistic statistic) {
+            distanceClassificationToPrior = distanceClassificationToPrior + statistic.distanceClassificationToPrior();
+            distanceClassificationToReal = distanceClassificationToReal + statistic.distanceClassificationToReal();
+            distancePriorToReal = distancePriorToReal + statistic.distancePriorToReal();
+            samples++;
+        }
+
+        public double averageDistanceClassificationToPrior() {
+            if (samples == 0) return 0d;
+            return distanceClassificationToPrior / samples;
+        }
+
+        public double averageDistanceClassificationToReal() {
+            if (samples == 0) return 0d;
+            return distanceClassificationToReal / samples;
+        }
+
+        public double averageDistancePriorToReal() {
+            if (samples == 0) return 0d;
+            return distancePriorToReal / samples;
+        }
+
+        @Override
+        public String toString() {
+            return "Based on " + samples + " samples:"
+                    + "\n    distance of Real  to Prior prob: " + averageDistancePriorToReal() + " (Estimate error)"
+                    + "\n    distance of Class to Real  prob: " + averageDistanceClassificationToReal() + " (Classification error)"
+                    + "\n    distance of Class to Prior prob: " + averageDistanceClassificationToPrior() + " (influence of Prior)";
+        }
+    }
+
+    private static ClassificationStatistic classifyRandom(Random random, ClassificationTable table,
+                                                          PriorProbability simulatedProbability,
+                                                          PriorProbability classificationProbability,
+                                                          boolean addRandomSource, double unknownGroupMaxProbability) {
 
         Classification.Builder<Set<String>> builder = new Classification.Builder<>();
 
-        int keyCount = 100000; // TODO
+        int keyCount = 10000; // TODO
 
-        builder.setDataSetIterator(SimulatedDataSetIterator.fromClassificationTable(table.makeCopy(),
-                simulatedProbability, keyCount, random));
+        ClassificationTable tableForSimulation = table.makeCopy();
+        PriorProbability probabilityForSimulation = simulatedProbability.makeCopy();
+
+        if (addRandomSource) {
+            tableForSimulation = addRandomGroupToTable(tableForSimulation, random);
+            probabilityForSimulation.put(INTERCEPT_GROUP_NAME, BigDecimal.valueOf(random.nextDouble() * (unknownGroupMaxProbability / (1 - unknownGroupMaxProbability))));
+            probabilityForSimulation = probabilityForSimulation.normalized();
+
+            simulatedProbability = probabilityForSimulation.makeCopy();
+            simulatedProbability.remove(INTERCEPT_GROUP_NAME);
+            simulatedProbability = simulatedProbability.normalized();
+        }
+
+        builder.setDataSetIterator(SimulatedDataSetIterator.fromClassificationTable(tableForSimulation,
+                probabilityForSimulation, keyCount, random));
         builder.setDataSetSaver(new NoActionDataSetSaver());
         builder.setTable(table.makeCopy());
         builder.setPropertyExtractor(new SourcePropertyExtractor());
@@ -182,33 +454,15 @@ public class AprioriTest {
         BatchStatistic statistic = batches.get(1L);
         if (statistic == null) {
             System.err.println("Classification of simulated dataset failed");
-            return;
+            return null;
         }
         PriorProbability classificationResult = PriorProbability.fromMap(statistic.getCommonClassification().getValues());
-        System.out.println("Distance to true prior:           " + simulatedProbability.distance(classificationResult));
-        System.out.println("Distance to classification prior: " + classificationProbability.distance(classificationResult));
-        System.out.println();
-    }
 
-    private static Map<String, BigDecimal> simulateStatistics(ClassificationTable table, PriorProbability probability) {
-        Map<String, BigDecimal> maskToFrequency = new TreeMap<>();
-
-        // TODO ensure table column-normalized
-
-        List<String> masks = table.getMasks();
-
-        for (String mask : masks) {
-            ClassificationRow row = table.classifyIdentification(mask);
-            ClassificationRow rowWithPrior = row.deepCopy();
-            rowWithPrior.applyPriorProbabilities(probability, false);
-            BigDecimal weighedSum = BigDecimal.ZERO;
-            for (BigDecimal weighedProbability : rowWithPrior.getValues().values()) {
-                weighedSum = weighedSum.add(weighedProbability);
-            }
-            maskToFrequency.put(mask, weighedSum);
-        }
-
-        return maskToFrequency;
+        ClassificationStatistic classificationStatistic = new ClassificationStatistic(keyCount);
+        classificationStatistic.aprioriProbability = classificationProbability;
+        classificationStatistic.datasetProbability = simulatedProbability;
+        classificationStatistic.resultProbability = classificationResult;
+        return classificationStatistic;
     }
 
     private static ClassificationTable addRandomGroupToTable(ClassificationTable table, Random random) {

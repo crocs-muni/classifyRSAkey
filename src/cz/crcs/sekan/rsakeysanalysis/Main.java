@@ -7,7 +7,6 @@ import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori.*;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.dataset.JsonDataSetFormatter;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.exception.ClassificationException;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.exception.DataSetException;
-import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationRow;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationTable;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.RawTable;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.makefile.Makefile;
@@ -74,10 +73,9 @@ public class Main {
                     break;
                 case "-mc":
                 case "--misclassification":
-                    String mInFile = args[++i], mOutFile = args[++i];
-                    long mKeys = Long.valueOf(args[++i]);
-                    Misclassification misclassification = new Misclassification(mInFile, mKeys); // TODO new algorithm
-                    misclassification.compute(mOutFile);
+                    ClassificationConfiguration mcConfig = ClassificationConfiguration.fromCommandLineOptions(args, 1);
+                    i = mcConfig.consumedArguments;
+                    Misclassification.compute(mcConfig.classificationTable);
                     break;
                 case "-pgp":
                 case "--convertPgp":
@@ -100,6 +98,20 @@ public class Main {
                     ClassificationConfiguration configuration = ClassificationConfiguration.fromCommandLineOptions(args, 1);
                     DuplicityRemover.removeDuplicitiesBatch(configuration.outputFolderPath, new JsonDataSetFormatter(),
                             configuration.inputPaths.toArray(new String[configuration.inputPaths.size()]));
+                    i = configuration.consumedArguments;
+                    break;
+                case "-um":
+                case "--uniqueModuli":
+                    configuration = ClassificationConfiguration.fromCommandLineOptions(args, 1);
+                    DuplicityRemover.printFirstModulus(configuration.outputFolderPath, new JsonDataSetFormatter(),
+                            configuration.inputPaths);
+                    i = configuration.consumedArguments;
+                    break;
+                case "-uf":
+                case "--uniqueFingerprints":
+                    configuration = ClassificationConfiguration.fromCommandLineOptions(args, 1);
+                    DuplicityRemover.printFirstHash(configuration.outputFolderPath, new JsonDataSetFormatter(),
+                            configuration.inputPaths);
                     i = configuration.consumedArguments;
                     break;
                 case "-ps":
@@ -208,6 +220,7 @@ public class Main {
                 "                         " + ClassificationConfiguration.BATCH_TYPE_SWITCH +
                 " batch  = " + Classification.BatchType.SOURCE +
                 "|" + Classification.BatchType.PRIMES +
+                "|" + Classification.BatchType.MODULUS_HASH +
                 "|" + Classification.BatchType.NONE + " -- how to batch keys\n" +
                 "                         " + ClassificationConfiguration.PRIOR_TYPE_SWITCH +
                 " prior  = " + Classification.PriorType.ESTIMATE +
@@ -241,7 +254,7 @@ public class Main {
                 " outdir = directory for unique datasets\n" +
                 "                        " + ClassificationConfiguration.INPUTS_SWITCH +
                 " in...  = paths to key sets (processed individually)\n" +
-                "  -a   table OPTIONS   Test a priori probability estimation.\n" +
+                "  -a -t table OPTIONS  Test a priori probability estimation.\n" +
                 "                        table = path to classification table file\n" +
                 "                        " + ClassificationConfiguration.KEY_COUNT_SWITCH +
                 " runs  = number of random estimations\n" +
@@ -364,7 +377,8 @@ public class Main {
 
         ClassificationConfiguration configuration = ClassificationConfiguration.fromCommandLineOptions(args, 0);
         //ClassificationSuccessTest.runFromConfiguration(configuration);
-        ClassificationSuccessTest.groupSuccess(configuration);
+        //ClassificationSuccessTest.groupSuccess(configuration);
+        ClassificationSuccessTest.overallSuccess(configuration);
         //ClassificationSuccessTest.theoreticalSuccess(configuration);
 
         return configuration.consumedArguments;
