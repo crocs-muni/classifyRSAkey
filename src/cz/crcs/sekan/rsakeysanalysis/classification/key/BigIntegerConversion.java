@@ -19,7 +19,7 @@ public class BigIntegerConversion {
             return new BigInteger(number.substring(2), 2);
         }
         else {
-            return new BigInteger(number, 10);
+            return new BigInteger(number, 16); // TODO original default is decadic, yet other tools use hexa without 0x
         }
     }
 }
