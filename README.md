@@ -27,10 +27,10 @@ java -jar classifyRSAkey.jar
 java -jar classifyRSAkey.jar -m in_makefile.json out_table.json
 ```
 * in_makefile.json - makefile which specifies the feature mask and the path to source keys
-  * see example: TODO
+  * see [makefile for USENIX Security '16](usenixsecurity16/classificationTableMakefile.json)
   * format of keys: csv file, with header ```id;n;e;p;q;d;t``` (id (dec), modulus (hex), public exponent (hex), prime1 (hex), prime2 (hex), private exponent (hex), time of generation (dec, can be 0))
 * out_table.json - primary classification table
-  * see example: TODO
+  * see [classification table for USENIX Security '16](usenixsecurity16/classificationTable.json)
   
 Raw keys:
 * RSA keys from software libraries: https://drive.google.com/folderview?id=0B0PpUrsKytcyUUV5d3kwX0VRNFk&usp=sharing
@@ -54,8 +54,8 @@ java -jar classifyRSAkey.jar -c in_table.json in_rsa_unique_keys.json out_dir
 * in_table.json - classification table, output of -m
 * in_rsa_unique_keys.json - unique RSA keys, one JSON object per line, output of -rd
 * out_dir - directory for output
-  * dataset.json - copy of the dataset, with added properties ```
-"batch":<id of batch - same source>, "vector":<feature mask of the key>, "probabilities":[<list of probabilities by group>]}```
+  * dataset.json - copy of the dataset, with added properties, first line is the table as JSON string
+    * ```"batch":<id of batch - same source>, "vector":<feature mask of the key>, "probabilities":[<list of probabilities by group>]```
   * "results, x - y keys.csv" - summary results, x - y is the minimum and maximum size of a batch
     * Results of classification of each key are summed as vectors, the resulting vector is normalized to sum to 1
       * Positive - summary for all keys for the given group
@@ -63,6 +63,7 @@ java -jar classifyRSAkey.jar -c in_table.json in_rsa_unique_keys.json out_dir
     * Number of keys which are certainly not coming from a given source
       * Negative - number of all negative results for the given group
       * Negative, Unique - number of unique negative results for the given group
+  * "containers results, x - y keys.csv" - summary results, similar as results, but aggregated over batches
 
 ### Default output - usage help
 ```
