@@ -291,13 +291,29 @@ public class DataSetClassification {
                     String source = sourceArray.toJSONString();
 
                     fullClassificationContainerResult.resetVariables();
-                    fullClassificationContainerResult.setVariable("p", key.getRsaKey().getP().toString(16));
-                    fullClassificationContainerResult.setVariable("q", key.getRsaKey().getQ().toString(16));
-                    fullClassificationContainerResult.setVariable("n", key.getRsaKey().getModulus().toString(16));
+                    if (key.getRsaKey().getP() != null) {
+                        fullClassificationContainerResult.setVariable("p", key.getRsaKey().getP().toString(16));
+                    } else {
+                        fullClassificationContainerResult.setVariable("p", null);
+                    }
+                    if (key.getRsaKey().getQ() != null) {
+                        fullClassificationContainerResult.setVariable("q", key.getRsaKey().getQ().toString(16));
+                    } else {
+                        fullClassificationContainerResult.setVariable("q", null);
+                    }
+                    if (key.getRsaKey().getModulus() != null) {
+                        fullClassificationContainerResult.setVariable("n", key.getRsaKey().getModulus().toString(16));
+                    } else {
+                        fullClassificationContainerResult.setVariable("n", null);
+                    }
                     fullClassificationContainerResult.setVariable("ordered", Boolean.valueOf(key.isOrdered()).toString());
                     fullClassificationContainerResult.setVariable("occurrence", Long.valueOf(key.getCount()).toString());
                     fullClassificationContainerResult.setVariable("source", source);
-                    fullClassificationContainerResult.setVariable("info", key.getInfo().toString());
+                    if (key.getInfo() != null) {
+                        fullClassificationContainerResult.setVariable("info", key.getInfo().toString());
+                    } else {
+                        fullClassificationContainerResult.setVariable("info", null);
+                    }
                     fullClassificationContainerResult.setVariable("batch", Long.valueOf(batchId).toString());
                     fullClassificationContainerResult.setVariable("vector", vectors);
                     fullClassificationContainerResult.setVariable("probabilities", values);
