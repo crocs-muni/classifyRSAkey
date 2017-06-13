@@ -276,6 +276,7 @@ public class DataSetClassification {
             for (ClassificationKey key : keys) {
                 try {
                     String values = "";
+                    row.normalize();
                     for (String groupName : table.getGroupsNames()) {
                         BigDecimal val = row.getSource(groupName);
                         values += (values.length() > 0 ? "," : "");

@@ -73,7 +73,10 @@ public class Template {
             if (variable.getValue() != null) {
                 generated = generated.replace("{$" + variable.getKey() + "}", variable.getValue());
             } else {
-                generated = generated.replace("\"" + variable.getKey() + "\":\"{$" + variable.getKey() + "}\", ", "");
+                generated = generated.replace("\"" + variable.getKey() + "\":\"{$" + variable.getKey() + "}\"", " ");
+                generated = generated.replace("\"" + variable.getKey() + "\":{$" + variable.getKey() + "}", " ");
+                generated = generated.replace("\"" + variable.getKey() + "\":[{$" + variable.getKey() + "}]", " ");
+                generated = generated.replace(" , ", "");
             }
         }
         return generated;
