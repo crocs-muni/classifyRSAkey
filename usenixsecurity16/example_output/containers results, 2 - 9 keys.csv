@@ -1,0 +1,14 @@
+Source,[Example libgcrypt batch of keys B]
+Unique keys,5
+Keys,5
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,-,-,0.00000044,-,-,-,0.01894272,0.00397458,0.33015988,0.64692238,-,-
+
+
+Source,[Example libgcrypt batch of keys A]
+Unique keys,5
+Keys,5
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,-,-,0.00000258,-,-,-,0.03745001,0.00051849,0.38270241,0.57932650,-,-
+
+

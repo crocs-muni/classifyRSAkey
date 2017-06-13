@@ -1,0 +1,18 @@
+Keys All,26
+Keys Unique,26
+
+Positive
+,Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+,0.01493498,0.03506468,0.02956469,0.25900390,0.11236811,0.10463560,0.05738092,0.05823309,0.10670255,0.09714926,0.11062531,0.00689840,0.00743850
+
+Positive,Unique
+,Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+,0.01493498,0.03506468,0.02956469,0.25900390,0.11236811,0.10463560,0.05738092,0.05823309,0.10670255,0.09714926,0.11062531,0.00689840,0.00743850
+
+Negative
+,Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+,25,14,20,0,14,14,15,6,7,6,6,24,25
+
+Negative,Unique
+,Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+,25,14,20,0,14,14,15,6,7,6,6,24,25
