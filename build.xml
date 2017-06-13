@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="classifyrsakey" default="all">
+  
+  
+  <property file="build.properties"/>
+  <!-- Uncomment the following property if no tests compilation is needed -->
+  <!-- 
+  <property name="skip.tests" value="true"/>
+   -->
+  
+  <!-- Compiler options -->
+  
+  <property name="compiler.debug" value="on"/>
+  <property name="compiler.generate.no.warnings" value="off"/>
+  <property name="compiler.args" value=""/>
+  <property name="compiler.max.memory" value="700m"/>
+  <patternset id="ignored.files">
+    <exclude name="**/*.hprof/**"/>
+    <exclude name="**/*.pyc/**"/>
+    <exclude name="**/*.pyo/**"/>
+    <exclude name="**/*.rbc/**"/>
+    <exclude name="**/*.yarb/**"/>
+    <exclude name="**/*~/**"/>
+    <exclude name="**/.DS_Store/**"/>
+    <exclude name="**/.git/**"/>
+    <exclude name="**/.hg/**"/>
+    <exclude name="**/.svn/**"/>
+    <exclude name="**/CVS/**"/>
+    <exclude name="**/RCS/**"/>
+    <exclude name="**/SCCS/**"/>
+    <exclude name="**/__pycache__/**"/>
+    <exclude name="**/_svn/**"/>
+    <exclude name="**/rcs/**"/>
+    <exclude name="**/vssver.scc/**"/>
+    <exclude name="**/vssver2.scc/**"/>
+  </patternset>
+  <patternset id="library.patterns">
+    <include name="*.war"/>
+    <include name="*.swc"/>
+    <include name="*.apk"/>
+    <include name="*.zip"/>
+    <include name="*.ear"/>
+    <include name="*.egg"/>
+    <include name="*.ane"/>
+    <include name="*.jar"/>
+  </patternset>
+  <patternset id="compiler.resources">
+    <exclude name="**/?*.java"/>
+    <exclude name="**/?*.form"/>
+    <exclude name="**/?*.class"/>
+    <exclude name="**/?*.groovy"/>
+    <exclude name="**/?*.scala"/>
+    <exclude name="**/?*.flex"/>
+    <exclude name="**/?*.kt"/>
+    <exclude name="**/?*.clj"/>
+    <exclude name="**/?*.aj"/>
+  </patternset>
+  
+  
+  <!-- Project Libraries -->
+  
+  <path id="library.json-simple-1.1.1.classpath">
+    <pathelement location="${basedir}/lib/json-simple-1.1.1.jar"/>
+  </path>
+  
+  <!-- Modules -->
+  
+  <import file="${basedir}/module_classifyrsakey.xml"/>
+  
+  <target name="init" description="Build initialization">
+    <!-- Perform any build initialization in this target -->
+  </target>
+  
+  <target name="clean" depends="clean.module.classifyrsakey" description="cleanup all"/>
+  
+  <target name="build.modules" depends="init, clean, compile.module.classifyrsakey" description="build all modules"/>
+  
+  <target name="init.artifacts">
+    <property name="artifacts.temp.dir" value="${basedir}/__artifacts_temp"/>
+    <property name="artifact.output.classifyrsakey:jar" value="${basedir}/out/artifacts/classifyRSAkey_jar"/>
+    <mkdir dir="${artifacts.temp.dir}"/>
+    <property name="temp.jar.path.classifyRSAkey.jar" value="${artifacts.temp.dir}/classifyRSAkey.jar"/>
+  </target>
+  
+  <target name="artifact.classifyrsakey:jar" depends="init.artifacts, compile.module.classifyrsakey" description="Build &#39;classifyRSAkey:jar&#39; artifact">
+    <property name="artifact.temp.output.classifyrsakey:jar" value="${artifacts.temp.dir}/classifyRSAkey_jar"/>
+    <mkdir dir="${artifact.temp.output.classifyrsakey:jar}"/>
+    <jar destfile="${temp.jar.path.classifyRSAkey.jar}" duplicate="preserve" filesetmanifest="mergewithoutmain">
+      <zipfileset dir="${classifyrsakey.output.dir}"/>
+      <zipfileset src="${basedir}/lib/json-simple-1.1.1.jar"/>
+      <manifest>
+        <attribute name="Main-Class" value="cz.crcs.sekan.rsakeysanalysis.Main" />
+    </manifest>
+    </jar>
+    <copy file="${temp.jar.path.classifyRSAkey.jar}" tofile="${artifact.temp.output.classifyrsakey:jar}/classifyRSAkey.jar"/>
+  </target>
+  
+  <target name="build.all.artifacts" depends="artifact.classifyrsakey:jar" description="Build all artifacts">
+    <mkdir dir="${artifact.output.classifyrsakey:jar}"/>
+    <copy todir="${artifact.output.classifyrsakey:jar}">
+      <fileset dir="${artifact.temp.output.classifyrsakey:jar}"/>
+    </copy>
+    
+    <!-- Delete temporary files -->
+    <delete dir="${artifacts.temp.dir}"/>
+  </target>
+  
+  <target name="all" depends="build.modules, build.all.artifacts" description="build all"/>
+</project>
