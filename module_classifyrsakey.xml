@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="module_classifyrsakey" default="compile.module.classifyrsakey">
+  <dirname property="module.classifyrsakey.basedir" file="${ant.file.module_classifyrsakey}"/>
+  
+  
+  <property name="compiler.args.classifyrsakey" value="-encoding UTF-8 -source 8 -target 8 ${compiler.args}"/>
+  
+  <property name="classifyrsakey.output.dir" value="${module.classifyrsakey.basedir}/out/production/classifyRSAkey"/>
+  <property name="classifyrsakey.testoutput.dir" value="${module.classifyrsakey.basedir}/out/test/classifyRSAkey"/>
+  
+  <path id="classifyrsakey.module.bootclasspath">
+    <!-- Paths to be included in compilation bootclasspath -->
+  </path>
+  
+  <path id="classifyrsakey.module.production.classpath">
+    <path refid="library.json-simple-1.1.1.classpath"/>
+  </path>
+  
+  <path id="classifyrsakey.runtime.production.module.classpath">
+    <pathelement location="${classifyrsakey.output.dir}"/>
+    <path refid="library.json-simple-1.1.1.classpath"/>
+  </path>
+  
+  <path id="classifyrsakey.module.classpath">
+    <pathelement location="${classifyrsakey.output.dir}"/>
+    <path refid="library.json-simple-1.1.1.classpath"/>
+  </path>
+  
+  <path id="classifyrsakey.runtime.module.classpath">
+    <pathelement location="${classifyrsakey.testoutput.dir}"/>
+    <pathelement location="${classifyrsakey.output.dir}"/>
+    <path refid="library.json-simple-1.1.1.classpath"/>
+  </path>
+  
+  
+  <patternset id="excluded.from.module.classifyrsakey">
+    <patternset refid="ignored.files"/>
+  </patternset>
+  
+  <patternset id="excluded.from.compilation.classifyrsakey">
+    <patternset refid="excluded.from.module.classifyrsakey"/>
+  </patternset>
+  
+  <path id="classifyrsakey.module.sourcepath">
+    <dirset dir="${module.classifyrsakey.basedir}">
+      <include name="src"/>
+    </dirset>
+  </path>
+  
+  
+  <target name="compile.module.classifyrsakey" depends="compile.module.classifyrsakey.production,compile.module.classifyrsakey.tests" description="Compile module classifyRSAkey"/>
+  
+  <target name="compile.module.classifyrsakey.production" description="Compile module classifyRSAkey; production classes">
+    <mkdir dir="${classifyrsakey.output.dir}"/>
+    <javac destdir="${classifyrsakey.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true">
+      <compilerarg line="${compiler.args.classifyrsakey}"/>
+      <bootclasspath refid="classifyrsakey.module.bootclasspath"/>
+      <classpath refid="classifyrsakey.module.production.classpath"/>
+      <src refid="classifyrsakey.module.sourcepath"/>
+      <patternset refid="excluded.from.compilation.classifyrsakey"/>
+    </javac>
+    
+    <copy todir="${classifyrsakey.output.dir}">
+      <fileset dir="${module.classifyrsakey.basedir}/src">
+        <patternset refid="compiler.resources"/>
+        <type type="file"/>
+      </fileset>
+    </copy>
+  </target>
+  
+  <target name="compile.module.classifyrsakey.tests" depends="compile.module.classifyrsakey.production" description="compile module classifyRSAkey; test classes" unless="skip.tests"/>
+  
+  <target name="clean.module.classifyrsakey" description="cleanup module">
+    <delete dir="${classifyrsakey.output.dir}"/>
+    <delete dir="${classifyrsakey.testoutput.dir}"/>
+  </target>
+</project>

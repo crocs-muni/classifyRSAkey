@@ -289,15 +289,11 @@ public class Main {
      */
     private static void tableInformation(String infile) throws Exception {
         RawTable table = RawTable.load(infile);
+        ClassificationTable ct = table.computeClassificationTable();
 
-        Map<String, Long> counts = table.computeSourcesCount();
-        System.out.println("Number of sources: " + counts.keySet().size());
-        System.out.println("Number of keys: " + counts.values().stream().mapToLong(Long::longValue).sum());
-
-        Set<Set<String>> groups = table.computeSourceGroups();
-        System.out.println("Groups (" + groups.size() + "): ");
-        for (Set<String> group : groups) {
-            System.out.println("\t" + String.join(", ", group));
+        System.out.println("Group name: Group sources");
+        for (String groupName : ct.getGroupsNames()) {
+            System.out.println(groupName + ": " + String.join(", ", ct.getGroupSources(groupName)));
         }
     }
 

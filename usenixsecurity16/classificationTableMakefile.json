@@ -1,0 +1,216 @@
+{
+    "maxThreadsForParsing": 5,
+    "checks": [
+        "keysValidity"
+    ],
+    "groups": {
+        "maxEuclideanDistance": 0.02
+    },
+    "identifications": [
+        {
+            "transformationId": "MostSignificantBits",
+            "transform": "n",
+            "options": {
+                "skip": 1,
+                "bits": 6
+            }
+        },
+        {
+            "transformationId": "LeastSignificantBits",
+            "transform": "n",
+            "options": {
+                "skip": 1,
+                "bits": 1
+            }
+        },
+        {
+            "transformationId": "RemainderFromDivision",
+            "transform": "n",
+            "options": {
+                "divisor": 3
+            }
+        },
+        {
+            "transformationId": "RemainderFromDivision",
+            "transform": "nblen",
+            "options": {
+                "divisor": 2
+            }
+        }
+    ],
+    "dataset": {
+        "G&D SmartCafe 3.2": [
+            "Cards/G+D SmartCafe 3.2 - 93 482 keys - RSA CRT 1024b - 20160103",
+            "Cards/G+D SmartCafe 3.2 - 100 000 keys - RSA CRT 1024b - 20160118",
+            "Cards/G+D SmartCafe 3.2 - 126 344 keys - RSA CRT 512b - 20151226",
+            "Cards/G+D SmartCafe 3.2 - 167 756 keys - RSA CRT 512b - 20160118"
+        ],
+        "G&D SmartCafe 4.x": [
+            "Cards/G+D SmartCafe4.x - 50 000 keys - RSA 1024b - 1 reupload",
+            "Cards/G+D SmartCafe4x - 2 075 779 keys - RSA 512b"
+        ],
+        "G&D SmartCafe 6.0": [
+            "Cards/G+D SmartCafe 6.0 - 86 727 keys - RSA CRT 1024b - 20160103",
+            "Cards/G+D SmartCafe 6.0 - 200 000 keys - RSA CRT 512b - 20151225"
+        ],
+        "Gemalto GCX 72K": [
+            "Cards/Gemalto GCX4 72K PK - 50 000 keys - RSA 1024b",
+            "Cards/Gemalto GCX4 72K PK - 200 000 keys - RSA CRT 512b - 20151228"
+        ],
+        "Gemalto GXP E64": [
+            "Cards/Gemalto GXP E64 PK - 200 000 keys - RSA CRT 512b - 20151225",
+            "Cards/Gemalto GXP E64 PK - 50 000 keys - RSA 1024b"
+        ],
+        "Oberthur Cosmo 64": [
+            "Cards/ID-ONE Cosmo 64 RSA v5.4 - 121 750 keys - RSA CRT 1024b - 20160118"
+        ],
+        "Oberthur Cosmo Dual 72k": [
+            "Cards/Oberthur Cosmo Dual 72k - 150 000 keys - RSA CRT 1024b - 20160118",
+            "Cards/Oberthur Cosmo Dual 72k - 152 773 keys - RSA CRT 512b - 20160127"
+        ],
+        "JavaCOS A22": [
+            "Cards/JavaCOS A22 - 100 000 keys - RSA CRT 1024b - 20151230",
+            "Cards/JavaCOS A22 - 200 000 keys - RSA CRT 512b - 20151224"
+        ],
+        "JavaCOS A40": [
+            "Cards/JavaCOS A40 - 98 568 keys - RSA CRT 1024b - 20151227",
+            "Cards/JavaCOS A40 - 200 000 keys - RSA CRT 512b - 20151224"
+        ],
+        "NXP J2A080": [
+            "Cards/NXP CJ2A080 - 3 000 000 keys - RSA 512b",
+            "Cards/NXP CJ2A080 - 50 000 keys - RSA 1024b"
+        ],
+        "NXP J2A081": [
+            "Cards/NXP CJ2A081 - 2 623 990 keys - RSA 512b",
+            "Cards/NXP CJ2A081 - 50 000 keys - RSA 1024b"
+        ],
+        "NXP J2D081": [
+            "Cards/NXP CJ2D081 - 2 387 010 keys - RSA 512b",
+            "Cards/NXP CJ2D081 - 50 000 keys - RSA 1024b"
+        ],
+        "NXP J3A081": [
+            "Cards/NXP CJ3A081 - 2 990 413 keys - RSA 512b",
+            "Cards/NXP CJ3A081 - 50 000 keys - RSA 1024b"
+        ],
+        "NXP J2E145G": [
+            "Cards/NXP J2E145G - 100 000 keys - RSA CRT 1024b - 20160102",
+            "Cards/NXP J2E145G - 150 000 keys - RSA CRT 512b - 20151227"
+        ],
+        "NXP JCOP 41 v2.2.1": [
+            "Cards/NXP JCOP 41 V2.2.1 - 993 640 keys - RSA 512b",
+            "Cards/NXP JCOP41 V2.2.1 - 50 000 keys - RSA 1024b"
+        ],
+        "Botan 1.11.29": [
+            "SoftwareImplementations/Botan_1-11-29_512",
+            "SoftwareImplementations/Botan_1-11-29_1024",
+            "SoftwareImplementations/Botan_1-11-29_2048"
+        ],
+        "Bouncy Castle 1.54": [
+            "SoftwareImplementations/Bouncy_Castle_1-54_512",
+            "SoftwareImplementations/Bouncy_Castle_1-54_1024",
+            "SoftwareImplementations/Bouncy_Castle_1-54_2048",
+            "SoftwareImplementations/Bouncy_Castle_1-54_512_extra",
+            "SoftwareImplementations/Bouncy_Castle_1-54_1024_extra",
+            "SoftwareImplementations/Bouncy_Castle_1-54_2048_extra"
+        ],
+        "Bouncy Castle 1.53": [
+            "SoftwareImplementations/Bouncy_Castle_1-53_512",
+            "SoftwareImplementations/Bouncy_Castle_1-53_1024",
+            "SoftwareImplementations/Bouncy_Castle_1-53_2048"
+        ],
+        "Cryptix JCE 20050328": [
+            "SoftwareImplementations/CryptixCrypto_20050328_512",
+            "SoftwareImplementations/CryptixCrypto_20050328_1024",
+            "SoftwareImplementations/CryptixCrypto_20050328_2048"
+        ],
+        "cryptlib 3.4.3": [
+            "SoftwareImplementations/cryptlib_3-4-3_512",
+            "SoftwareImplementations/cryptlib_3-4-3_1024",
+            "SoftwareImplementations/cryptlib_3-4-3_2048"
+        ],
+        "Crypto++ 5.6.3": [
+            "SoftwareImplementations/Cryptopp_5-6-3_512",
+            "SoftwareImplementations/Cryptopp_5-6-3_1024",
+            "SoftwareImplementations/Cryptopp_5-6-3_2048"
+        ],
+        "FlexiProvider 1.7p7": [
+            "SoftwareImplementations/FlexiCore_1-7p7_512",
+            "SoftwareImplementations/FlexiCore_1-7p7_1024",
+            "SoftwareImplementations/FlexiCore_1-7p7_2048"
+        ],
+        "GNU Crypto 2.0.1": [
+            "SoftwareImplementations/GNU_Crypto_2-0-1_1024",
+            "SoftwareImplementations/GNU_Crypto_2-0-1_2048",
+            "SoftwareImplementations/GNU_Crypto_2-0-1_512"
+        ],
+        "GNU Libgcrypt 1.6.5": [
+            "SoftwareImplementations/libgcrypt_1-6-5_512",
+            "SoftwareImplementations/libgcrypt_1-6-5_1024",
+            "SoftwareImplementations/libgcrypt_1-6-5_2048"
+        ],
+        "GNU Libgcrypt 1.6.5 FIPS": [
+            "SoftwareImplementations/libgcrypt_1-6-5_FIPS_512",
+            "SoftwareImplementations/libgcrypt_1-6-5_FIPS_1024",
+            "SoftwareImplementations/libgcrypt_1-6-5_FIPS_2048"
+        ],
+        "LibTomCrypt 1.17": [
+            "SoftwareImplementations/LibTomCrypt_1-17_512",
+            "SoftwareImplementations/LibTomCrypt_1-17_1024",
+            "SoftwareImplementations/LibTomCrypt_1-17_2048"
+        ],
+        "mbedTLS 2.2.1": [
+            "SoftwareImplementations/mbedTLS_2-2-1_512",
+            "SoftwareImplementations/mbedTLS_2-2-1_1024",
+            "SoftwareImplementations/mbedTLS_2-2-1_2048"
+        ],
+        "Microsoft CNG": [
+            "SoftwareImplementations/MSCNG_512",
+            "SoftwareImplementations/MSCNG_1024",
+            "SoftwareImplementations/Microsoft_CNG_2048"
+        ],
+        "Microsoft CryptoAPI": [
+            "SoftwareImplementations/Microsoft_CryptoAPI_2048",
+            "SoftwareImplementations/MSCryptoAPI_512"
+        ],
+        "Microsoft .NET": [
+            "SoftwareImplementations/MSdotNET_512",
+            "SoftwareImplementations/MSdotNET_1024",
+            "SoftwareImplementations/Microsoft_.NET_2048"
+        ],
+        "Nettle 3.2": [
+            "SoftwareImplementations/Nettle_3-2_512",
+            "SoftwareImplementations/Nettle_3-2_1024",
+            "SoftwareImplementations/Nettle_3-2_2048"
+        ],
+        "OpenSSL 1.0.2g": [
+            "SoftwareImplementations/OpenSSL_1-0-2g_512",
+            "SoftwareImplementations/OpenSSL_1-0-2g_1024",
+            "SoftwareImplementations/OpenSSL_1-0-2g_2048"
+        ],
+        "OpenSSL 1.0.2g FIPS 2.0.12": [
+            "SoftwareImplementations/OpenSSL_1-0-2g_FIPS_2-0-12_512",
+            "SoftwareImplementations/OpenSSL_1-0-2g_FIPS_2-0-12_1024",
+            "SoftwareImplementations/OpenSSL_1-0-2g_FIPS_2-0-12_2048"
+        ],
+        "PGPSDK 4": [
+            "SoftwareImplementations/PGPSDK_4_512",
+            "SoftwareImplementations/PGPSDK_4_1024",
+            "SoftwareImplementations/PGP_SDK_4_2048"
+        ],
+        "PGPSDK 4 FIPS": [
+            "SoftwareImplementations/PGPSDK_4_FIPS_512",
+            "SoftwareImplementations/PGP_SDK_4_FIPS_1024",
+            "SoftwareImplementations/PGP_SDK_4_FIPS_2048"
+        ],
+        "SunRsaSign (OpenJDK 1.8) 1.8.0": [
+            "SoftwareImplementations/SunRsaSign_512",
+            "SoftwareImplementations/SunRsaSign_1024",
+            "SoftwareImplementations/SunRsaSign_2048"
+        ],
+        "WolfSSL 3.9.0": [
+            "SoftwareImplementations/WolfSSL_3-9-0_512",
+            "SoftwareImplementations/WolfSSL_3-9-0_1024",
+            "SoftwareImplementations/WolfSSL_3-9-0_2048"
+        ]
+    }
+}

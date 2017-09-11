@@ -1,0 +1,182 @@
+Source,[Example OpenSSL key 7]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,-,-,0.00471783,0.39571325,-,-,0.07717268,0.17829864,0.14552113,0.19857646,-,-
+
+
+Source,[Example PGPSDK4 FIPS key 2]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,-,-,1.00000000,-,-,-,-,-,-,-,-,-
+
+
+Source,[Example OpenSSL key 8]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,-,-,0.00300677,0.28328040,-,-,0.11490529,0.29097037,0.16523758,0.14259958,-,-
+
+
+Source,[Example PGPSDK4 FIPS key 3]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,-,-,1.00000000,-,-,-,-,-,-,-,-,-
+
+
+Source,[Example OpenSSL key 5]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,-,-,0.00672271,0.26673664,-,-,0.17904753,0.21390328,0.17899010,0.13145651,0.02314323,-
+
+
+Source,[Example OpenSSL key 6]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,0.05663825,0.13856511,0.00409626,0.20066487,0.20011626,0.13059398,0.03825490,0.05673135,0.07385780,0.10048122,-,-
+
+
+Source,[Example PGPSDK4 FIPS key 1]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,-,-,1.00000000,-,-,-,-,-,-,-,-,-
+
+
+Source,[Example PGPSDK4 FIPS key 6]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,-,-,1.00000000,-,-,-,-,-,-,-,-,-
+
+
+Source,[Example Microsoft CryptoAPI key 10]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,0.10297466,-,0.00151769,-,0.24016756,0.13289563,0.06798337,0.21225629,0.12192229,0.12028251,-,-
+
+
+Source,[Example OpenSSL key 9]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,0.05667639,0.14926646,0.00192798,0.19445253,0.19094916,0.10297718,0.03790217,0.09785038,0.07051179,0.09748597,-,-
+
+
+Source,[Example PGPSDK4 FIPS key 4]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,-,-,1.00000000,-,-,-,-,-,-,-,-,-
+
+
+Source,[Example PGPSDK4 FIPS key 5]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,-,-,1.00000000,-,-,-,-,-,-,-,-,-
+
+
+Source,[Example OpenSSL key 10]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,0.06109129,0.16229165,0.00115199,0.18024503,0.18000922,0.08887831,0.04037316,0.12188168,0.07315105,0.09092663,-,-
+
+
+Source,[Example Microsoft CryptoAPI key 8]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,0.10207672,-,0.00153352,-,0.24963498,0.13275893,0.06530396,0.20505094,0.11828466,0.12535630,-,-
+
+
+Source,[Example Microsoft CryptoAPI key 9]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,0.05496036,0.08130685,0.01708851,0.21080431,0.21101945,0.19565366,0.03926477,0.00573669,0.07924747,0.10491791,-,-
+
+
+Source,[Example Microsoft CryptoAPI key 2]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,-,-,0.00300677,0.28328040,-,-,0.11490529,0.29097037,0.16523758,0.14259958,-,-
+
+
+Source,[Example Microsoft CryptoAPI key 3]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,-,-,0.00433136,-,-,-,0.12143924,0.37592850,0.22270041,0.27560049,-,-
+
+
+Source,[Example Microsoft CryptoAPI key 1]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,0.10207672,-,0.00153352,-,0.24963498,0.13275893,0.06530396,0.20505094,0.11828466,0.12535630,-,-
+
+
+Source,[Example Microsoft CryptoAPI key 6]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,0.08558353,-,0.00356546,-,0.29621988,0.16339364,0.05845304,0.13473877,0.10822672,0.14981897,-,-
+
+
+Source,[Example OpenSSL key 3]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,0.05597631,0.13610300,0.00523889,0.20374033,0.20054303,0.13368328,0.03923906,0.04826712,0.07449098,0.10271801,-,-
+
+
+Source,[Example Microsoft CryptoAPI key 7]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,0.08659456,-,0.01207354,-,0.30611278,0.22809865,0.05816060,0.04087863,0.11352081,0.15456043,-,-
+
+
+Source,[Example OpenSSL key 4]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,-,-,0.16307811,0.40940295,-,-,0.07740936,0.00060396,0.15131836,0.19818725,-,-
+
+
+Source,[Example Microsoft CryptoAPI key 4]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,0.10203700,-,0.09862437,-,0.38604567,-,0.07356761,0.00042045,0.14575677,0.19354813,-,-
+
+
+Source,[Example OpenSSL key 1]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+0.38830955,0.04499576,0.10114898,0.00167166,0.00996968,0.01007254,0.05021186,0.02310459,0.00375760,0.01241600,0.00472538,0.15621527,0.19340113
+
+
+Source,[Example Microsoft CryptoAPI key 5]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,-,-,0.39620774,-,-,-,0.10736437,-,0.22196705,0.27446085,-,-
+
+
+Source,[Example OpenSSL key 2]
+Unique keys,1
+Keys,1
+Group  1,Group  2,Group  3,Group  4,Group  5,Group  6,Group  7,Group  8,Group  9,Group 10,Group 11,Group 12,Group 13
+-,-,-,0.00300677,0.28328040,-,-,0.11490529,0.29097037,0.16523758,0.14259958,-,-
+
+

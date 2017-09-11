@@ -70,7 +70,14 @@ public class Template {
     public String generateString() {
         String generated = content;
         for (Map.Entry<String, String> variable : variables.entrySet()) {
-            generated = generated.replace("{$" + variable.getKey() + "}", variable.getValue());
+            if (variable.getValue() != null) {
+                generated = generated.replace("{$" + variable.getKey() + "}", variable.getValue());
+            } else {
+                generated = generated.replace("\"" + variable.getKey() + "\":\"{$" + variable.getKey() + "}\"", " ");
+                generated = generated.replace("\"" + variable.getKey() + "\":{$" + variable.getKey() + "}", " ");
+                generated = generated.replace("\"" + variable.getKey() + "\":[{$" + variable.getKey() + "}]", " ");
+                generated = generated.replace(" , ", "");
+            }
         }
         return generated;
     }
