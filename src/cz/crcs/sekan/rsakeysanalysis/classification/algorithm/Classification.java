@@ -1,6 +1,5 @@
 package cz.crcs.sekan.rsakeysanalysis.classification.algorithm;
 
-import com.sun.xml.internal.bind.v2.runtime.IllegalAnnotationException;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori.*;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.dataset.*;
 import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.exception.DataSetException;
