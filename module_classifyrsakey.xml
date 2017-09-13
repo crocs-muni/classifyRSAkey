@@ -2,6 +2,9 @@
 <project name="module_classifyrsakey" default="compile.module.classifyrsakey">
   <dirname property="module.classifyrsakey.basedir" file="${ant.file.module_classifyrsakey}"/>
   
+  <property name="module.jdk.home.classifyrsakey" value="${project.jdk.home}"/>
+  <property name="module.jdk.bin.classifyrsakey" value="${project.jdk.bin}"/>
+  <property name="module.jdk.classpath.classifyrsakey" value="${project.jdk.classpath}"/>
   
   <property name="compiler.args.classifyrsakey" value="-encoding UTF-8 -source 8 -target 8 ${compiler.args}"/>
   
@@ -13,23 +16,33 @@
   </path>
   
   <path id="classifyrsakey.module.production.classpath">
+    <path refid="${module.jdk.classpath.classifyrsakey}"/>
     <path refid="library.json-simple-1.1.1.classpath"/>
+    <path refid="library.org.apache.commons:commons-math3:3.6.1.classpath"/>
+    <pathelement location="${basedir}/lib/pj2_20170203.jar"/>
   </path>
   
   <path id="classifyrsakey.runtime.production.module.classpath">
     <pathelement location="${classifyrsakey.output.dir}"/>
     <path refid="library.json-simple-1.1.1.classpath"/>
+    <path refid="library.org.apache.commons:commons-math3:3.6.1.classpath"/>
+    <pathelement location="${basedir}/lib/pj2_20170203.jar"/>
   </path>
   
   <path id="classifyrsakey.module.classpath">
+    <path refid="${module.jdk.classpath.classifyrsakey}"/>
     <pathelement location="${classifyrsakey.output.dir}"/>
     <path refid="library.json-simple-1.1.1.classpath"/>
+    <path refid="library.org.apache.commons:commons-math3:3.6.1.classpath"/>
+    <pathelement location="${basedir}/lib/pj2_20170203.jar"/>
   </path>
   
   <path id="classifyrsakey.runtime.module.classpath">
     <pathelement location="${classifyrsakey.testoutput.dir}"/>
     <pathelement location="${classifyrsakey.output.dir}"/>
     <path refid="library.json-simple-1.1.1.classpath"/>
+    <path refid="library.org.apache.commons:commons-math3:3.6.1.classpath"/>
+    <pathelement location="${basedir}/lib/pj2_20170203.jar"/>
   </path>
   
   
@@ -50,15 +63,15 @@
   
   <target name="compile.module.classifyrsakey" depends="compile.module.classifyrsakey.production,compile.module.classifyrsakey.tests" description="Compile module classifyRSAkey"/>
   
-  <target name="compile.module.classifyrsakey.production" description="Compile module classifyRSAkey; production classes">
+  <target name="compile.module.classifyrsakey.production" depends="register.custom.compilers" description="Compile module classifyRSAkey; production classes">
     <mkdir dir="${classifyrsakey.output.dir}"/>
-    <javac destdir="${classifyrsakey.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true">
+    <javac2 destdir="${classifyrsakey.output.dir}" debug="${compiler.debug}" nowarn="${compiler.generate.no.warnings}" memorymaximumsize="${compiler.max.memory}" fork="true" executable="${module.jdk.bin.classifyrsakey}/javac">
       <compilerarg line="${compiler.args.classifyrsakey}"/>
       <bootclasspath refid="classifyrsakey.module.bootclasspath"/>
       <classpath refid="classifyrsakey.module.production.classpath"/>
       <src refid="classifyrsakey.module.sourcepath"/>
       <patternset refid="excluded.from.compilation.classifyrsakey"/>
-    </javac>
+    </javac2>
     
     <copy todir="${classifyrsakey.output.dir}">
       <fileset dir="${module.classifyrsakey.basedir}/src">
@@ -68,7 +81,7 @@
     </copy>
   </target>
   
-  <target name="compile.module.classifyrsakey.tests" depends="compile.module.classifyrsakey.production" description="compile module classifyRSAkey; test classes" unless="skip.tests"/>
+  <target name="compile.module.classifyrsakey.tests" depends="register.custom.compilers,compile.module.classifyrsakey.production" description="compile module classifyRSAkey; test classes" unless="skip.tests"/>
   
   <target name="clean.module.classifyrsakey" description="cleanup module">
     <delete dir="${classifyrsakey.output.dir}"/>
