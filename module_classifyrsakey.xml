@@ -13,31 +13,31 @@
   </path>
   
   <path id="classifyrsakey.module.production.classpath">
-    <path refid="library.json-simple-1.1.1.classpath"/>
+    <path refid="library.lib.classpath"/>
+    <path refid="library.classifyrsakey.classpath"/>
     <path refid="library.org.apache.commons:commons-math3:3.6.1.classpath"/>
-    <pathelement location="${basedir}/lib/pj2_20170203.jar"/>
   </path>
   
   <path id="classifyrsakey.runtime.production.module.classpath">
     <pathelement location="${classifyrsakey.output.dir}"/>
-    <path refid="library.json-simple-1.1.1.classpath"/>
+    <path refid="library.lib.classpath"/>
+    <path refid="library.classifyrsakey.classpath"/>
     <path refid="library.org.apache.commons:commons-math3:3.6.1.classpath"/>
-    <pathelement location="${basedir}/lib/pj2_20170203.jar"/>
   </path>
   
   <path id="classifyrsakey.module.classpath">
     <pathelement location="${classifyrsakey.output.dir}"/>
-    <path refid="library.json-simple-1.1.1.classpath"/>
+    <path refid="library.lib.classpath"/>
+    <path refid="library.classifyrsakey.classpath"/>
     <path refid="library.org.apache.commons:commons-math3:3.6.1.classpath"/>
-    <pathelement location="${basedir}/lib/pj2_20170203.jar"/>
   </path>
   
   <path id="classifyrsakey.runtime.module.classpath">
     <pathelement location="${classifyrsakey.testoutput.dir}"/>
     <pathelement location="${classifyrsakey.output.dir}"/>
-    <path refid="library.json-simple-1.1.1.classpath"/>
+    <path refid="library.lib.classpath"/>
+    <path refid="library.classifyrsakey.classpath"/>
     <path refid="library.org.apache.commons:commons-math3:3.6.1.classpath"/>
-    <pathelement location="${basedir}/lib/pj2_20170203.jar"/>
   </path>
   
   

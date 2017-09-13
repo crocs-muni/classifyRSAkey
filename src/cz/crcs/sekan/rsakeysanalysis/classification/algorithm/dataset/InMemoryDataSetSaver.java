@@ -5,7 +5,6 @@ import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKey;
 import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKeyStub;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationContainer;
 import cz.crcs.sekan.rsakeysanalysis.common.ExtendedWriter;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
 import java.util.Map;

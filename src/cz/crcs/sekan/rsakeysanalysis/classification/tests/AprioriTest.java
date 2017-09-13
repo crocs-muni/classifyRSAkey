@@ -17,8 +17,8 @@ import cz.crcs.sekan.rsakeysanalysis.classification.tests.util.DataType;
 import cz.crcs.sekan.rsakeysanalysis.classification.tests.util.DistributionsComparator;
 import cz.crcs.sekan.rsakeysanalysis.classification.tests.util.SimulatedDataSetIterator;
 import cz.crcs.sekan.rsakeysanalysis.common.ExtendedWriter;
+import cz.crcs.sekan.rsakeysanalysis.common.exception.NotImplementedException;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.File;
 import java.io.IOException;

@@ -15,7 +15,7 @@ import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationContaine
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationRow;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationTable;
 import cz.crcs.sekan.rsakeysanalysis.common.ExtendedWriter;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import cz.crcs.sekan.rsakeysanalysis.common.exception.NotImplementedException;
 
 import java.io.File;
 import java.io.IOException;

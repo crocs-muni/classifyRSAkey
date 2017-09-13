@@ -59,12 +59,17 @@
   
   <!-- Project Libraries -->
   
-  <path id="library.json-simple-1.1.1.classpath">
+  <path id="library.classifyrsakey.classpath">
+    <pathelement location="${basedir}/usenixsecurity16/classifyRSAkey.jar"/>
+  </path>
+  
+  <path id="library.lib.classpath">
     <pathelement location="${basedir}/lib/json-simple-1.1.1.jar"/>
+    <pathelement location="${basedir}/lib/pj2_20170203.jar"/>
   </path>
   
   <path id="library.org.apache.commons:commons-math3:3.6.1.classpath">
-    <pathelement location="${path.variable.maven_repository}/org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar"/>
+    <pathelement location="${basedir}/lib/commons-math3-3.6.1.jar"/>
   </path>
   
   <!-- Modules -->
@@ -91,9 +96,10 @@
     <mkdir dir="${artifact.temp.output.classifyrsakey:jar}"/>
     <jar destfile="${temp.jar.path.classifyRSAkey.jar}" duplicate="preserve" filesetmanifest="mergewithoutmain">
       <zipfileset dir="${classifyrsakey.output.dir}"/>
-      <zipfileset src="${basedir}/lib/json-simple-1.1.1.jar"/>
-      <zipfileset src="${path.variable.maven_repository}/org/apache/commons/commons-math3/3.6.1/commons-math3-3.6.1.jar"/>
+      <zipfileset src="${basedir}/lib/commons-math3-3.6.1.jar"/>
       <zipfileset src="${basedir}/lib/pj2_20170203.jar"/>
+      <zipfileset src="${basedir}/lib/json-simple-1.1.1.jar"/>
+      <zipfileset src="${basedir}/usenixsecurity16/classifyRSAkey.jar"/>
       <manifest>
         <attribute name="Main-Class" value="cz.crcs.sekan.rsakeysanalysis.Main" />
       </manifest>

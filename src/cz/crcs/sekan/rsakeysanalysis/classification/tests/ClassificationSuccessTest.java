@@ -9,7 +9,6 @@ import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationRow;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationTable;
 import cz.crcs.sekan.rsakeysanalysis.classification.tests.util.*;
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.io.IOException;
 import java.math.BigDecimal;

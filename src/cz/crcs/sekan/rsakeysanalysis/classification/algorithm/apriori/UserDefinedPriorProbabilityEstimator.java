@@ -1,9 +1,6 @@
 package cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori;
 
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationTable;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
-import java.util.TreeMap;
 
 /**
  * @author xnemec1

@@ -3,13 +3,10 @@ package cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori;
 import cz.crcs.sekan.rsakeysanalysis.classification.tests.util.ClassificationSuccessStatisticsAggregator;
 import org.apache.commons.math3.stat.inference.ChiSquareTest;
 import org.json.simple.JSONObject;
-import sun.awt.AWTAccessor;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.util.*;
-import java.util.function.BinaryOperator;
-import java.util.stream.Collectors;
 
 /**
  * Vector of probabilities, summing to one, unless scale using scale().

@@ -2,7 +2,7 @@ package cz.crcs.sekan.rsakeysanalysis.classification.algorithm.dataset;
 
 import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKey;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationContainer;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+import cz.crcs.sekan.rsakeysanalysis.common.exception.NotImplementedException;
 
 /**
  * @author xnemec1
