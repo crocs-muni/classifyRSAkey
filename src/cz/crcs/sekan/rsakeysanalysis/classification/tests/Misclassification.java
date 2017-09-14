@@ -30,9 +30,6 @@ public class Misclassification {
             PriorProbability priorProbability = estimator.computePriorProbability();
 
             json.put(group, priorProbability.normalized().toJSON());
-
-            System.out.println(group);
-            System.out.println(priorProbability.normalized().toJSON());
         }
         System.out.println();
         System.out.println(json);
