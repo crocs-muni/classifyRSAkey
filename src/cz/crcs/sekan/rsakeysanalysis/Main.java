@@ -130,6 +130,9 @@ public class Main {
                 case "--help":
                     showHelp();
                     break;
+                case "-debug":
+                    showDebugHelp();
+                    break;
                 case "-cr":
                 case "--cumulateResults":
                     CumulateResults.run(args[++i], args[++i]);
@@ -172,36 +175,9 @@ public class Main {
     private static void showHelp() {
         System.out.println("RSAKeyAnalysis tool, CRoCS 2017");
         System.out.println("Options:\n" +
-                "  -m   make  out       Build classification table from makefile.\n" +
-                "                        make  = path to makefile\n" +
-                "                        out   = path to json file (classification table file)\n" +
-                "  -i   table           Load classification table and show information about it.\n" +
-                "                        table = path to classification table file\n" +
-                "  -ed  table out       Create table showing euclidean distance of sources.\n" +
-                "                        table = path to classification table file\n" +
-                "                        out   = path to html file\n" +
-                "  -ec  table out       Convert classification table to out format.\n" +
-                "                        table = path to classification table file\n" +
-                "                        out   = path to csv file\n" +
-                "  -er  table out       Export raw table (usable for generate dendrogram)\n" +
-                "                        table = path to classification table file\n" +
-                "                        out   = path to csv file\n" +
-                "  -cs  table out keys  Compute classification success.\n" +
-                "                        table = path to classification table file\n" +
-                "                        out   = path to csv file\n" +
-                "                        keys  = how many keys will be used for test.\n" +
-                "  -mc  table out keys  Compute misclassification rate.\n" +
-                "                        table = path to classification table file\n" +
-                "                        out   = path to csv file\n" +
-                "                        keys  = how many keys will be used for test.\n" +
-                "  -pgp in    out       Convert pgp keys to format for classification.\n" +
-                "                        in    = path to json file (dump of pgp key set)\n" +
-                "                                http://pgp.key-server.io/dump/\n" +
-                "                                https://github.com/diafygi/openpgp-python\n" +
-                "                        out   = path to json file (classification key set)\n" +
-                "  -f   in              Load factors which have to be try on modulus of key.\n" +
-                "                        in    = path to txt file\n" +
-                "                                Each line of file contains one factor (hex).\n" +
+                "  -h                   Show this help.\n" +
+
+                // classification
                 "  -c   OPTIONS         Classify keys from key set.\n" +
                 "                        OPTIONS = "
                 + ClassificationConfiguration.CLASSIFICATION_TABLE_SWITCH + " table "
@@ -214,26 +190,78 @@ public class Main {
                 "                         " + ClassificationConfiguration.CLASSIFICATION_TABLE_SWITCH +
                 " table  = path to classification table file\n" +
                 "                         " + ClassificationConfiguration.INPUTS_SWITCH +
-                " in     = path(s) to data set(s)\n" +
+                " in...  = path(s) to data set(s)\n" +
                 "                         " + ClassificationConfiguration.OUTPUT_SWITCH +
-                " out    = path to folder for storing results\n" +
+                " outdir = path to folder for storing results\n" +
                 "                         " + ClassificationConfiguration.BATCH_TYPE_SWITCH +
                 " batch  = " + Classification.BatchType.SOURCE +
                 "|" + Classification.BatchType.PRIMES +
                 "|" + Classification.BatchType.MODULUS_HASH +
-                "|" + Classification.BatchType.NONE + " -- how to batch keys\n" +
+                "|" + Classification.BatchType.NONE + " = how to batch keys\n" +
                 "                         " + ClassificationConfiguration.PRIOR_TYPE_SWITCH +
                 " prior  = " + Classification.PriorType.ESTIMATE +
                 "|" + Classification.PriorType.UNIFORM + "|" + Classification.PriorType.TABLE +
-                " -- prior probability\n" +
+                " = prior probability\n" +
                 "                         " + ClassificationConfiguration.EXPORT_TYPE_SWITCH +
                 " export = " + Classification.ExportType.NONE +
                 "|" + Classification.ExportType.JSON + "|" + Classification.ExportType.CSV +
-                " -- annotated dataset export format\n" +
+                " = annotated dataset export format\n" +
                 "                         " + ClassificationConfiguration.MEMORY_TYPE_SWITCH +
                 " temp   = " + Classification.MemoryType.NONE +
                 "|" + Classification.MemoryType.DISK + "|" + Classification.MemoryType.MEMORY +
-                " -- temporary memory handling - only for export\n" +
+                " = temporary memory handling - only for export\n" +
+
+                // table info
+                "  -i   table           Load classification table and show information about it.\n" +
+                "                        table = path to classification table file\n" +
+
+                // make table
+                "  -m   make  out       Build classification table from makefile.\n" +
+                "                        make  = path to makefile\n" +
+                "                        out   = path to json file (classification table file)\n" +
+
+                // classification success and misclassification
+                "  -mc -t table         Compute misclassification rate.\n" +
+                "                         -t table = path to classification table file\n" +
+                "  -cs  OPTIONS         Compute classification success.\n" +
+                "                        OPTIONS = "
+                + ClassificationConfiguration.CLASSIFICATION_TABLE_SWITCH + " table "
+                + ClassificationConfiguration.OUTPUT_SWITCH + " outdir "
+                + ClassificationConfiguration.KEY_COUNT_SWITCH + " keys ["
+                + ClassificationConfiguration.RNG_SEED_SWITCH + " seed]\n" +
+                "                         " + ClassificationConfiguration.CLASSIFICATION_TABLE_SWITCH +
+                " table  = path to classification table file\n" +
+                "                         " + ClassificationConfiguration.OUTPUT_SWITCH +
+                " outdir = path to folder for storing results\n" +
+                "                         " + ClassificationConfiguration.KEY_COUNT_SWITCH +
+                " keys   = number of keys in simulations\n" +
+                "                         " + ClassificationConfiguration.RNG_SEED_SWITCH +
+                " seed   = optional seed for RNG\n" +
+
+                // table format conversions
+                "  -er  table out       Export raw table (used to generate dendrogram).\n" +
+                "                        table = path to classification table file\n" +
+                "                        out   = path to csv file\n" +
+                "  -ed  table out       Create table showing euclidean distance of sources.\n" +
+                "                        table = path to classification table file\n" +
+                "                        out   = path to html file\n" +
+                "  -ec  table out       Convert classification table to csv format.\n" +
+                "                        table = path to classification table file\n" +
+                "                        out   = path to csv file\n" +
+
+                // duplicity removal
+                "  -um " + ClassificationConfiguration.INPUTS_SWITCH + " in... "
+                + ClassificationConfiguration.OUTPUT_SWITCH + " out  Print only keys with first occurrence of modulus|n.\n" +
+                "  -uf " + ClassificationConfiguration.INPUTS_SWITCH + " in... "
+                + ClassificationConfiguration.OUTPUT_SWITCH + " out  Print only keys with first occurrence of fprint.\n" +
+                "  -rd " + ClassificationConfiguration.INPUTS_SWITCH + " in... "
+                + ClassificationConfiguration.OUTPUT_SWITCH + " out  Remove duplicities from key set (collecting attributes).\n" +
+                "                        " + ClassificationConfiguration.INPUTS_SWITCH +
+                " in...   = paths to key sets (processed individually)\n" +
+                "                        " + ClassificationConfiguration.OUTPUT_SWITCH +
+                " outdir  = directory for unique datasets\n" +
+
+                // partial sort
                 "  -ps OPTIONS          Partially sort the dataset to make duplicity removal easier.\n" +
                 "                        OPTIONS = "
                 + ClassificationConfiguration.INPUTS_SWITCH + " in... "
@@ -241,31 +269,43 @@ public class Main {
                 + ClassificationConfiguration.TEMP_SWITCH + " temp "
                 + ClassificationConfiguration.KEY_COUNT_SWITCH + " prefix_bits \n" +
                 "                        " + ClassificationConfiguration.INPUTS_SWITCH +
-                " in... = paths to datasets\n" +
+                "   in... = paths to datasets\n" +
                 "                        " + ClassificationConfiguration.OUTPUT_SWITCH +
-                " out   = path to output directory for presorted dataset\n" +
+                "   out   = path to output directory for presorted dataset\n" +
                 "                        " + ClassificationConfiguration.TEMP_SWITCH +
                 " temp  = directory for temporary files\n" +
                 "                        " + ClassificationConfiguration.KEY_COUNT_SWITCH +
-                " bits  = number of prefix bits (makes 2^b temporary files)\n" +
-                "  -rd " + ClassificationConfiguration.INPUTS_SWITCH + " ... "
-                + ClassificationConfiguration.OUTPUT_SWITCH + " out    Remove duplicity from key set.\n" +
-                "                        " + ClassificationConfiguration.OUTPUT_SWITCH +
-                " outdir = directory for unique datasets\n" +
-                "                        " + ClassificationConfiguration.INPUTS_SWITCH +
-                " in...  = paths to key sets (processed individually)\n" +
-                "  -a -t table OPTIONS  Test a priori probability estimation.\n" +
-                "                        table = path to classification table file\n" +
-                "                        " + ClassificationConfiguration.KEY_COUNT_SWITCH +
-                " runs  = number of random estimations\n" +
-                "                        " + ClassificationConfiguration.RNG_SEED_SWITCH +
-                " seed  = optional seed for RNG\n" +
-                "  -nc  table           Set classification table for not classify some keys.\n" +
-                "                        table = path to classification table file\n" +
-                "  -h                   Show this help.\n" +
-                "" +
+                "   bits  = number of prefix bits (makes 2^b temporary files)\n" +
+
+                "  -debug               Show debug and deprecated options.\n" +
                 "");
         //TODO complete all options
+    }
+
+    private static void showDebugHelp() {
+        System.out.println("RSAKeyAnalysis tool, CRoCS 2017");
+        System.out.println("Experimental or deprecated options:\n" +
+                // mix
+                "  -a   OPTIONS         Test a priori probability estimation.\n" +
+                "                        OPTIONS = -t table " +
+                ClassificationConfiguration.KEY_COUNT_SWITCH + " runs [" +
+                ClassificationConfiguration.RNG_SEED_SWITCH + " seed]\n" +
+                "                         -t" +
+                " table = path to classification table file\n" +
+                "                         " + ClassificationConfiguration.KEY_COUNT_SWITCH +
+                " runs  = number of random estimations\n" +
+                "                         " + ClassificationConfiguration.RNG_SEED_SWITCH +
+                " seed  = optional seed for RNG\n" +
+                "  -pgp in    out       Convert pgp keys to format for classification.\n" +
+                "                        in    = path to json file (dump of pgp key set)\n" +
+                "                                http://pgp.key-server.io/dump/\n" +
+                "                                https://github.com/diafygi/openpgp-python\n" +
+                "                        out   = path to json file (classification key set)\n" +
+                "  -f   in              Load factors for trial division on moduli.\n" +
+                "                        in    = path to txt file\n" +
+                "                                Each line of file contains one factor (hex).\n" +
+                "  -h                   Show help for standard commands.\n" +
+                "");
     }
 
     /**
