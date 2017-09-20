@@ -2,6 +2,7 @@
 
 import json
 import os
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.patches as mpatches
@@ -14,6 +15,9 @@ import csv
 import numpy as np
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter, LogLocator, \
     FuncFormatter, LogFormatter
+
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
 
 if len(sys.argv) < 4:
     print("Usage: {0} classification_table.csv Name_of_domain classification_dir(s)...".format(

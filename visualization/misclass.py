@@ -2,6 +2,7 @@
 
 import json
 import os
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import sys
@@ -13,6 +14,9 @@ import numpy as np
 import matplotlib.patches as mpatches
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter, LogLocator, \
     FuncFormatter, LogFormatter
+    
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
 
 if len(sys.argv) != 3:
     print("Usage: {0} classification_table.csv misclassification.json".format(

@@ -2,6 +2,7 @@
 
 import json
 import os
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import sys
@@ -9,6 +10,9 @@ import math
 from re import findall
 import datetime
 import csv
+
+matplotlib.rcParams['pdf.fonttype'] = 42
+matplotlib.rcParams['ps.fonttype'] = 42
 
 if len(sys.argv) < 2:
     print("Usage: {0} classification_table.csv \"group_name\"".format(
