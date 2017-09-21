@@ -21,9 +21,12 @@ This project extends the work presented in the paper ["The Million-Key Question 
 
 The tool is a fork of the [classifyRSAkey tool](https://github.com/crocs-muni/classifyRSAkey). Original project details: https://crocs.fi.muni.cz/public/papers/usenix2016
 
+**Note: this version substantially changes the purpose (from _classification of a single key_ to _measurement in a large dataset_), functionality, implementation and CLI of the tool. If you want to use the original tool, look for a relevant release of the [classifyRSAkey tool](https://github.com/crocs-muni/classifyRSAkey).**
+
+
 #### Build
 ```
-git clone FIXME
+git clone https://gitlab.fi.muni.cz/xnemec1/classifyRSAkey
 cd classifyRSAkey/
 ant
 ```
@@ -37,7 +40,7 @@ java -jar classifyRSAkey.jar
 ### Basic usage
 
 #### Classification of dataset of RSA keys - produces estimate of library popularity
-Overview for the options of the classification:
+Overview for the options of the classification (-c prefix):
 * -t table  = path to classification table file (.json)
 * -i in...  = path(s) to data set(s) - large dataset of RSA keys
 * -o outdir = path to folder for storing results
@@ -68,12 +71,12 @@ java -jar classifyRSAkey.jar -c -t in_classification_table.json -i in_rsa_unique
 Explanation of options:
 
 * -t in_classification_table.json = classification table, output of -m
-  * see also FIXME [precomputed classification table for ACSAC '17](usenixsecurity16/classificationTable.json)
-  * see also [precomputed classification table for USENIX Security '16](usenixsecurity16/classificationTable.json)
+  * see also [precomputed classification table for ACSAC '17](acsac17/table/ACSAC_Public_mod3_mod4_N2-7.json)
+  * see also an older [precomputed classification table for USENIX Security '16](usenixsecurity16/classificationTable.json)
 * -i in_rsa_unique_keys.json = unique RSA public keys, one JSON object per line
   * ```{"n":"0x<RSA modulus in hexadecimal>", "e":"0x<public exponent in hexadecimal>", "source":[<list of strings, e.g., validity, common name>]}```
   * if the original dataset contains duplicate RSA moduli, first obtain unique keys using -um, -uf or -rd
-  * see also FIXME [example RSA public keys](usenixsecurity16/exampleKeysForClassification.json)
+  * see also [example RSA public keys - public PGP dataset from April 2017](https://drive.google.com/open?id=0B0PpUrsKytcyRUQ2VVpTOHdpWlE)
 * -o out_dir = directory for output - following outputs will be created in out_dir/in_rsa_unique_keys.json/:
   * prior_probability.json - key/value json:
       * "probability" - group name to group probability
@@ -100,22 +103,22 @@ Explanation of different options:
 ```
 java -jar classifyRSAkey.jar -i in_classification_table.json
 ```
-Example output for [precomputed classification table for USENIX Security '16](usenixsecurity16/classificationTable.json):
+Example output for [precomputed classification table for ACSAC '17](acsac17/table/ACSAC_Public_mod3_mod4_N2-7.json):
 ```
 Group name: Group sources
-Group  1: G&D SmartCafe 4.x, G&D SmartCafe 6.0
-Group  2: GNU Crypto 2.0.1
-Group  3: NXP J2D081, NXP J2E145G
-Group  4: PGPSDK 4 FIPS
-Group  5: OpenSSL 1.0.2g
-Group  6: Oberthur Cosmo Dual 72k
-Group  7: NXP J2A080, NXP J2A081, NXP J3A081, NXP JCOP 41 v2.2.1
-Group  8: Bouncy Castle 1.53, Cryptix JCE 20050328, FlexiProvider 1.7p7, SunRsaSign (OpenJDK 1.8), mbedTLS 2.2.1
-Group  9: Gemalto GXP E64
-Group 10: Bouncy Castle 1.54, Crypto++ 5.6.3, Microsoft .NET, Microsoft CNG, Microsoft CryptoAPI
-Group 11: Botan 1.11.29, Feitian JavaCOS A22, Feitian JavaCOS A40, GNU Libgcrypt 1.6.5, GNU Libgcrypt 1.6.5 FIPS, Gemalto GCX 72K, LibTomCrypt 1.17, Nettle 3.2, Oberthur Cosmo 64, OpenSSL FIPS 2.0.12, PGPSDK 4, WolfSSL 3.9.0, cryptlib 3.4.3
-Group 12: Infineon JTOP 80K
-Group 13: G&D SmartCafe 3.2
+Group  1: G&D SmartCafe 3.2
+Group  2: G&D SmartCafe 4.x & 6.0
+Group  3: GNU Crypto 2.0.1
+Group  4: Gemalto GXP E64
+Group  5: NXP J2A080 & J2A081 & J3A081 & JCOP 41 V2.2.1
+Group  6: Oberthur Cosmo Dual 72K
+Group  7: OpenSSL 0.9.7 & 1.0.2g & 1.0.2k & 1.1.0e
+Group  8: PGPSDK 4 FIPS
+Group  9: Infineon JTOP 80K, YubiKey 4 & 4 Nano
+Group 10: NXP J2D081 & J2E145G, YubiKey NEO
+Group 11: Bouncy Castle 1.54 (Java), Crypto++ 5.6.0 & 5.6.3 & 5.6.5, Libgcrypt 1.7.6 FIPS, Microsoft CryptoAPI & CNG & .NET
+Group 12: Bouncy Castle 1.53 (Java), Cryptix JCE 20050328, FlexiProvider 1.7p7, HSM Utimaco Security Server Se50, Nettle 2.0, PolarSSL 0.10.0, PuTTY 0.67, SunRsaSign OpenJDK 1.8.0, mbedTLS 1.3.19 & 2.2.1 & 2.4.2
+Group 13: Botan 1.5.6 & 1.11.29 & 2.1.0, Feitian JavaCOS A22 & A40, Gemalto GCX4 72K, HSM SafeNet Luna SA-1700, LibTomCrypt 1.17, Libgcrypt 1.6.0 & 1.6.5 & 1.7.6, Libgcrypt 1.6.0 FIPS & 1.6.5 FIPS, Nettle 3.2 & 3.3, Oberthur Cosmo 64, OpenSSL FIPS 2.0.12 & 2.0.14, PGPSDK 4, WolfSSL 2.0rc1 & 3.9.0 & 3.10.2, cryptlib 3.4.3 & 3.4.3.1
 ```
 
 #### Create a custom classification table from raw keys
@@ -123,17 +126,22 @@ Group 13: G&D SmartCafe 3.2
 java -jar classifyRSAkey.jar -m in_makefile.json out_classification_table.json
 ```
 * in_makefile.json - makefile which specifies the feature mask and the path to source keys
-  * see [makefile for USENIX Security '16](usenixsecurity16/classificationTableMakefile.json)
+  * see also [makefile for ACSAC '17](acsac17/table/makefile_ACSAC_Public_mod3_mod4_N2-7.json)
+  * see also an older [makefile for USENIX Security '16](usenixsecurity16/classificationTableMakefile.json)
   * features in feature mask extend the abstract class Transformation
   * format of keys: csv file, with header ```id;n;e;p;q;d;t``` (id (dec), modulus (hex), public exponent (hex), prime1 (hex), prime2 (hex), private exponent (hex), time of generation (dec, can be 0))
 * out_classification_table.json - classification table
-  * see [precomputed classification table for USENIX Security '16](usenixsecurity16/classificationTable.json)
+  * see [precomputed classification table for ACSAC '17](acsac17/table/ACSAC_Public_mod3_mod4_N2-7.json)
+  * see also an older [precomputed classification table for USENIX Security '16](usenixsecurity16/classificationTable.json)
   
 Raw keys:
-* RSA keys from software libraries:
+* ACSAC '17 - RSA keys:
+  * https://drive.google.com/drive/u/3/folders/0B0PpUrsKytcyMllkUHJ0RkZkdzA
+  * Separate archives for cards, HSMs and software libraries
+* USENIX '16 - RSA keys from software libraries:
   * https://drive.google.com/folderview?id=0B0PpUrsKytcyUUV5d3kwX0VRNFk&usp=sharing
   * Separate zip files for every library and length of RSA keys. Naming format: library_version_keylength.zip
-* RSA keys from cryptographic smartcards:
+* USENIX '16 - RSA keys from cryptographic smartcards:
   * https://drive.google.com/open?id=0B_DMu_2XOQ9XQWYyQmxXbDZuems
   * Separate zip files for every library and length of RSA keys. Format: smartcard-numberOfKeys-keyLength.zip
 
