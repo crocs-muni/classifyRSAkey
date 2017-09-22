@@ -38,7 +38,7 @@ colorAssignment = function(x, colors, grouped, useFixedColors) {
         groupID = a$label
         groupLabel = grouped[a$label]
         if (useFixedColors) {
-            groupIDs = c(13, 12, 5, 7, 10, 4, 9, 3, 11, 1, 2, 6, 8)
+            groupIDs = c(13, 12, 7, 5, 10, 4, 9, 3, 11, 1, 2, 6, 8)
             groupLabel = groupIDs[grouped[a$label]]
             labCol = colors[groupLabel]
         } else {
