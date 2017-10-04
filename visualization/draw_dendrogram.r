@@ -1,3 +1,5 @@
+library(grDevices)
+
 readRawTable = function(tablePath) {
     rawTable = read.csv2(tablePath, sep = ",", header = T, stringsAsFactors = F, check.names = FALSE)
     rownames(rawTable) = rawTable[,1] # first column is the classification vector
@@ -45,7 +47,7 @@ colorAssignment = function(x, colors, grouped, useFixedColors) {
             labCol = colors[grouped[which(names(grouped) == a$label)]]
         }
         
-        attr(x, "nodePar") = list(lab.cex = 1.65, lab.col = labCol, label = "test", lab.font=2)  
+        attr(x, "nodePar") = list(lab.cex = 1.65, lab.col = labCol, label = "test", lab.font=2, pch="o")  
         attr(x, "label") = paste0("[", groupLabel, "] ", groupID)
     }
     return(x)
@@ -98,4 +100,5 @@ if (length(args) != 1) {
     pdf("dendrogram.pdf", width = 8, height = 12)
     processDirectory(rawTablePath)
     dev.off()
+    embedFonts("dendrogram.pdf")
 }
