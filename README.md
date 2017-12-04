@@ -13,9 +13,9 @@ Java tool used to estimate the share of cryptographic libraries from datasets of
 
 Conference website: https://www.acsac.org/2017
 
-Paper website: TBA
+Paper website: https://www.acsac.org/2017/openconf/modules/request.php?module=oc_program&action=summary.php&id=106
 
-Project details: https://crocs.fi.muni.cz/public/papers/acsac17
+Project details: https://crocs.fi.muni.cz/public/papers/acsac2017
 
 This project extends the work presented in the paper ["The Million-Key Question – Investigating the Origins of RSA Public Keys"](https://www.usenix.org/conference/usenixsecurity16/technical-sessions/presentation/svenda)
 
