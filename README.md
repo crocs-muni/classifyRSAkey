@@ -17,6 +17,10 @@ Paper website: https://www.acsac.org/2017/openconf/modules/request.php?module=oc
 
 Project details: https://crocs.fi.muni.cz/public/papers/acsac2017
 
+Data processing (TLS, PGP): https://github.com/crocs-muni/acsac2017-data-tools
+
+Data processing (Certificate Transparency): https://github.com/crocs-muni/acsac2017-certificate-transparency-java
+
 This project extends the work presented in the paper ["The Million-Key Question – Investigating the Origins of RSA Public Keys"](https://www.usenix.org/conference/usenixsecurity16/technical-sessions/presentation/svenda)
 
 The tool is a fork of the [classifyRSAkey tool](https://github.com/crocs-muni/classifyRSAkey). Original project details: https://crocs.fi.muni.cz/public/papers/usenix2016
