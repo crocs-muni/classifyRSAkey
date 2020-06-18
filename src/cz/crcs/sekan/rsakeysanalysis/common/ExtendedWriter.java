@@ -22,4 +22,10 @@ public class ExtendedWriter extends BufferedWriter {
         write(line);
         newLine();
     }
+
+    @Override
+    public void close() throws IOException {
+        super.flush();
+        super.close();
+    }
 }

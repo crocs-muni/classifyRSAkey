@@ -39,7 +39,7 @@ public class InMemoryDataSetSaver implements DataSetSaver {
     }
 
     @Override
-    public void reconstructDataSet(BatchHolder batchHolder, Map<Long, ClassificationKeyStub> keyIdToKeyStub) {
+    public void reconstructDataSet(BatchHolder batchHolder, Map<Long, ClassificationKeyStub> keyIdToKeyStub) throws IOException {
         for (Long keyId : keyIdToClassificationKey.keySet()) {
             ClassificationKey key = keyIdToClassificationKey.get(keyId);
             ClassificationContainer container = batchIdToClassificationContainer.get(batchHolder.getBatchIdForKeyId(keyId));
@@ -51,5 +51,6 @@ public class InMemoryDataSetSaver implements DataSetSaver {
                 System.err.println("Could not save result of classification: " + e.getMessage());
             }
         }
+        resultWriter.flush();
     }
 }

@@ -1,9 +1,6 @@
 package cz.crcs.sekan.rsakeysanalysis.tools;
 
 import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKey;
-import javafx.util.Pair;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 
 import java.io.*;
 import java.math.BigInteger;

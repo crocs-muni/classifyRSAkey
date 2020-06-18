@@ -10,7 +10,7 @@ import cz.crcs.sekan.rsakeysanalysis.classification.table.*;
 import cz.crcs.sekan.rsakeysanalysis.classification.tests.ModulusFactors;
 import cz.crcs.sekan.rsakeysanalysis.common.ExtendedWriter;
 import cz.crcs.sekan.rsakeysanalysis.template.Template;
-import javafx.util.Pair;
+import cz.crcs.sekan.rsakeysanalysis.util.Pair;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 

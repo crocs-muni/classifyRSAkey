@@ -5,7 +5,7 @@ import cz.crcs.sekan.rsakeysanalysis.classification.table.transformation.excepti
 import cz.crcs.sekan.rsakeysanalysis.classification.table.transformation.exception.WrongOptionsFormatException;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.transformation.exception.WrongTransformationFormatException;
 import cz.crcs.sekan.rsakeysanalysis.common.RSAKey;
-import javafx.util.Pair;
+import cz.crcs.sekan.rsakeysanalysis.util.Pair;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 

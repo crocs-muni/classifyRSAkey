@@ -5,7 +5,7 @@ import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKeyStub;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationContainer;
 import cz.crcs.sekan.rsakeysanalysis.common.ExtendedWriter;
 import cz.crcs.sekan.rsakeysanalysis.template.Template;
-import javafx.util.Pair;
+import cz.crcs.sekan.rsakeysanalysis.util.Pair;
 
 import java.io.File;
 import java.io.IOException;

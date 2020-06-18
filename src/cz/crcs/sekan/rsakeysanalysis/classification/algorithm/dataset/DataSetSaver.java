@@ -5,6 +5,7 @@ import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKey;
 import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKeyStub;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.ClassificationContainer;
 
+import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -14,5 +15,5 @@ import java.util.Map;
 public interface DataSetSaver {
     public void registerKeyUnderKeyId(ClassificationKey key, Long keyId);
     public void setBatchClassificationResult(Long batchId, ClassificationContainer classificationContainer);
-    public void reconstructDataSet(BatchHolder batchHolder, Map<Long, ClassificationKeyStub> keyIdToKeyStub);
+    public void reconstructDataSet(BatchHolder batchHolder, Map<Long, ClassificationKeyStub> keyIdToKeyStub) throws IOException;
 }
