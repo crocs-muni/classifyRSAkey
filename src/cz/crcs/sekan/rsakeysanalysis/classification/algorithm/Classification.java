@@ -374,7 +374,12 @@ public class Classification<BatchProperty> {
             System.out.println(String.format("Saved statistics in %d seconds", (System.currentTimeMillis() - time) / 1000));
 
         time = System.currentTimeMillis();
-        dataSetSaver.reconstructDataSet(batchHolder, keyIdToKeyStub);
+        try {
+            dataSetSaver.reconstructDataSet(batchHolder, keyIdToKeyStub);
+        } catch (IOException e) {
+            System.err.println("Couldn't save dataset result to file");
+            e.printStackTrace();
+        }
         if (makeOutputs)
             System.out.println(String.format("Saved annotated dataset in %d seconds", (System.currentTimeMillis() - time) / 1000));
         return priorProbabilityEstimator;

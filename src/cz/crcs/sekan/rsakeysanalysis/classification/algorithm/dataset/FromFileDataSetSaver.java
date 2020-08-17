@@ -47,7 +47,7 @@ public class FromFileDataSetSaver implements DataSetSaver {
     }
 
     @Override
-    public void reconstructDataSet(BatchHolder batchHolder, Map<Long, ClassificationKeyStub> keyIdToKeyStub) {
+    public void reconstructDataSet(BatchHolder batchHolder, Map<Long, ClassificationKeyStub> keyIdToKeyStub) throws IOException {
         while (dataSetIterator.hasNext()) {
             ClassificationKey key = dataSetIterator.next();
             Long keyId = keyModulusToKeyId.get(key.getShortenedModulus());
@@ -62,6 +62,7 @@ public class FromFileDataSetSaver implements DataSetSaver {
                 System.err.println("Could not save result of classification: " + e.getMessage());
             }
         }
+        resultWriter.flush();
         dataSetIterator.close();
     }
 }

@@ -7,7 +7,7 @@ import cz.crcs.sekan.rsakeysanalysis.classification.table.RawTable;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.transformation.exception.TransformationNotFoundException;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.transformation.exception.WrongTransformationFormatException;
 import cz.crcs.sekan.rsakeysanalysis.common.ExtendedWriter;
-import javafx.util.Pair;
+import cz.crcs.sekan.rsakeysanalysis.util.Pair;
 import org.json.simple.parser.ParseException;
 
 import java.io.IOException;

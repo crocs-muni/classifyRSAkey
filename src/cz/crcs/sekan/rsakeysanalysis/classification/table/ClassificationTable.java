@@ -4,8 +4,6 @@ import cz.crcs.sekan.rsakeysanalysis.classification.algorithm.apriori.PriorProba
 import cz.crcs.sekan.rsakeysanalysis.classification.key.ClassificationKey;
 import cz.crcs.sekan.rsakeysanalysis.classification.table.identification.IdentificationGenerator;
 import cz.crcs.sekan.rsakeysanalysis.common.ExtendedWriter;
-import javafx.util.Pair;
-import org.omg.CORBA.INTERNAL;
 
 import java.io.IOException;
 import java.math.BigDecimal;
